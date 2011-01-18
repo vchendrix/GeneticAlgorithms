@@ -6,7 +6,7 @@ kwds = {}
 kwds['long_description'] = open('README.txt').read()
 
 if sys.version_info[:2] < (2, 6):
-    raise Exception('This version of bitstring needs Python 2.7 or later. ')
+    raise Exception('This version of ga needs Python 2.7 or later. ')
 
 setup(name='ga',
       version='0.1',
@@ -16,10 +16,10 @@ setup(name='ga',
       url='https://github.com/valreee/GeneticAlgorithms',
       download_url='https://valreee@github.com/valreee/GeneticAlgorithms.git',
       license='',
-      py_modules=['ga.goldberg','ga.random','ga.simple],
+      py_modules=['ga.goldberg','ga.utilities','ga.simple','ga.tsp','ga.common'],
       platforms='all',
       classifiers = [
-        'Development Status :: 5 - Beta',
+        'Development Status :: .1 - Beta',
         'Intended Audience :: Developers',
         'Operating System :: OS Independent',
         'Programming Language :: Python :: 2.6',

@@ -12,8 +12,8 @@ SimpleGeneticAlgorithm  - a simple tripartite algorithm
 
 Functions:
 
-initData
-initReport
+initData -  Gets user input for the initalization of the GA
+initReport - Report header for SGA's output
 
 Exceptions:
 
@@ -22,67 +22,29 @@ Exceptions:
 '''
 
 from __future__ import division
-import array
 import copy
-from random import Random
+import ga
+from ga.common import Individual
 
 __version__ = '0.1'
 __author__ = "Val Hendrix (val.hendrix@me.com)"
 __date__ = 'Jan 7, 2011'
-__url__ = ''
-__copyright__ = "(C) 2011 Val Hendrix."
+__url__ = 'https://github.com/valreee/GeneticAlgorithms'
 
     
-def initData():
-    ''' Get user input for the initalization of the
-        GA
-        
-        Returns popsize, lchrom, maxgen, pcross, pmutation, random
-    '''
-    
-    popsize = input("Enter population size      : ")
-    lchrom = input("Enter chromosome length    : ")
-    maxgen = input("Enter max generations      : ")
-    pcross = input("Enter crossover probability: ")
-    pmutation = input("Enter mutation probability : ")
-    random = Random()
-    random.randomize();
-    return popsize, lchrom, maxgen, pcross, pmutation, random
 
-def initReport(sga):
-    print "------------------------------------------------------------------------------------------------------------------------------------\n"
-    print "      A Simple Genetic Algorithm in Python - SGAP - v %s" % __version__
-    print "                    Val Hendrix 2011"
-    print "------------------------------------------------------------------------------------------------------------------------------------\n"
-    print "     SGAP Paramters"
-    print "     --------------"
-    print "  Population Size (popsize)          : %d" % sga.popsize
-    print "  Chromosome length (lchrom)         : %d" % sga.lchrom
-    print "  Max # of generations (maxgen)      : %d" % sga.maxgen
-    print "  Crossover probability (pcross)     : %.15f" % sga.pcross
-    print "  Mutation probability (pmutation)   : %.15f" % sga.pmutation
-    print "     Intial Generation Statistics"
-    print "     --------------"
-    print "  Initial Population maximum fitness : %.15f" % sga.max
-    print "  Initial Population average fitness : %.15f" % sga.avg
-    print "  Initial Population minimum fitness : %.15f" % sga.min
-    print "  Initial Population sum of fitness  : %.15f" % sga.sumfitness
-    
-
-class Chromosome(object):
+class Chromosome(ga.common.Chromosome):
     ''' An artificial chromosomve '''
     
     
     
-    def __init__(self, length=20):
+    def __init__(self):
         ''' Constructor 
             
             Populations the chromosomes alleles to the length
         '''
-        self.alleles = []  
+        super(Chromosome, self).__init__()
         self.uint = 0
-        for i in range(length):
-            self.alleles.append(False)
             
     def __getitem__(self, key): 
         """
@@ -97,12 +59,13 @@ class Chromosome(object):
             >>> chrom=Chromosome(length=20)
             >>> chrom[1]=True
         """
+        
         if(key >= len(self.alleles) or item != self.alleles[key]):
             if item:
                 self.uint += pow(2, key)
             elif key < len(self.alleles):
                 self.uint -= pow(2, key)
-        self.alleles[key] = item
+        self.__setattr__(key,item)
        
     def __str__(self):
         s = ""
@@ -111,49 +74,7 @@ class Chromosome(object):
         return s
    
         
-class Individual(object):
-    '''
-    An individual in a population
-    Methods:
-    
-    none
-    
-    
-    Special methods:
 
-    Also available are the operators []
-    
-    Properties:
-    
-    chrom -- An artificial chromosome or bit string
-    fitness -- Objective function value
-    max -- the maximun length of a chromosome
-    parent1 -- parent of individual
-    parent2 -- parent of individual
-    x -- Phenotype - unsigned integer
-    xsite -- Crossover site
-
-    bin -- The bitstring as a binary string.
-    bool -- For single bit bitstrings, interpret as True or False.
-    
-    '''
-    
-    def __init__(self, chrom, max=0, x=0, fitness=0, parent1=0, parent2=0, xsite=0):
-        ''' Constructor '''
-        self.max = max    
-        self.chrom = chrom  # Genotype - bitstring
-        self.x = x                                # Phenotype - unsigned integer
-        self.fitness = fitness                    # Objective function value
-        self.parent1 = parent1                    # Parents and crossover point
-        self.parent2 = parent2
-        self.xsite = xsite
-        
-        
-    
-    def __str__(self):
-        return "(%d,%d)\t%d\t%s\t%d\t%.15f" % (self.parent1, self.parent2, self.xsite, self.chrom, self.x, self.fitness)
-    
-    
 
     
 class SimpleGeneticAlgorithm(object):
