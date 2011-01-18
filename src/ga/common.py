@@ -1,13 +1,21 @@
 '''
 Created on Jan 17, 2011
 
+This module defines the common genetic algorithm functions and
+base classes used by all GAs
+
 Classes:
 
+Chromosome - artificial chromosome
 Individual - an individual in a population
+GeneticAlgorithm - base class for all Genetic Algorithms
 
 
 Functions:
 
+initData - gets the user data from the command line 
+initReport - initial report of the initial GA population
+selectRoulette - the roulette wheel selection algorithm
 
 Exceptions:
 
@@ -284,23 +292,25 @@ class GeneticAlgorithm(object):
         
             
     def report(self):
-        if(self.verbose):
-            print "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
-            print " Population Report"
-            print " Generation %d\t\t\t\t\t\t\t\t\t\t\t\tGeneration %d" % (self.gen, self.gen+1)
-            print "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
-            print "%s\t%s\t\t\t\t%s\t\t%s\t\t\t|\t%s\t%s\t%s\t%s\t\t\t\t%s\t\t%s" % ('#','string','x','fitness','#','parents','xsite','string','x','fitness')
-            for i in range(self.popsize):
-                op = self.oldpop[i]
-                np = self.newpop[i]
-                print "%d)\t%s\t%d\t%.15f\t|\t%d)\t%s" % (i, op.chrom, op.x, op.fitness, i, np)
+        if(not self.silent or self.verbose):
+            if(self.verbose):
                 print "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
-        print " Generation %d & Accumulation Statistics:\t max:%.3f\t min:%.3f\tsumfitness:%.15f\tavg:%.3f\tnmutation:%d\tncross:%d" % (self.gen, self.max, self.min, self.sumfitness,self.avg, self.nmutation, self.ncross)
-        print " Generation %d & Accumulation Statistics:\t max:%.2f\t min:%.2f\tsumx:%.2f\tavg:%.2f\tnmutation:%d\tncross:%d" % (self.gen, self.maxx, self.minx, self.sumx,self.avgx, self.nmutation, self.ncross)
-        print "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+                print " Population Report"
+                print " Generation %d\t\t\t\t\t\t\t\t\t\t\t\tGeneration %d" % (self.gen, self.gen+1)
+                print "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+                print "%s\t%s\t\t\t\t%s\t\t%s\t\t\t|\t%s\t%s\t%s\t%s\t\t\t\t%s\t\t%s" % ('#','string','x','fitness','#','parents','xsite','string','x','fitness')
+                for i in range(self.popsize):
+                    op = self.oldpop[i]
+                    np = self.newpop[i]
+                    print "%d)\t%s\t%d\t%.15f\t|\t%d)\t%s" % (i, op.chrom, op.x, op.fitness, i, np)
+                    print "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
+            print " Generation %d & Accumulation Statistics:\t max:%.3f\t min:%.3f\tsumfitness:%.15f\tavg:%.3f\tnmutation:%d\tncross:%d" % (self.gen, self.max, self.min, self.sumfitness,self.avg, self.nmutation, self.ncross)
+            print " Generation %d & Accumulation Statistics:\t max:%.2f\t min:%.2f\tsumx:%.2f\tavg:%.2f\tnmutation:%d\tncross:%d" % (self.gen, self.maxx, self.minx, self.sumx,self.avgx, self.nmutation, self.ncross)
+            print "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
         
-    def run(self):
+    def run(self,silent=True, verbose=False):
         ''' run the algorithm '''
+        self.silent=silent
         s = self
         s.gen = 0
         for s.gen in range(s.maxgen):

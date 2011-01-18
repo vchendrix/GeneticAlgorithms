@@ -7,11 +7,13 @@ This module defines the random functions defined in
 
 Classes:
 
-Random -- A Psuedorandom number generator 
+Random -- A Psuedorandom number generator (PRNG)
 
 Functions:
 
-swap
+createGraph - create an undirected graph with n vertices populated using the PRNG
+maxmin - returns the maximun and minimum hamiltonian paths for the given graph
+swap - swap data between two variables
 
 
 Exceptions:
@@ -27,7 +29,51 @@ __url__ = 'https://github.com/valreee/GeneticAlgorithms'
 __copyright__ = "(C) 2011 Val Hendrix."
 
 import array
+import itertools
 import math
+
+def createGraph(n,rand):
+    """ create an undirected graph 
+        n is the number of vertices
+        rand is the seeded random number generator
+        
+        rand = Random()
+        rand.warmupRandom(.2342987345987345)
+        graph = createGraph(5,rand)
+    """    
+        
+    graph=[0]*n
+    for i in range(n):
+        graph[i]=[0]*n
+            
+    for i in range(n):
+        for j in range(i,n):
+            if i !=j:
+                r=rand.rnd(0, 200)
+                graph[i][j]=r
+                graph[j][i]=r
+                
+        print graph[i]
+         
+    return graph
+    
+def maxmin(graph):
+    """ find the maximun and minimum hamiltonian circuit for 
+        a fully connected graph
+    """
+    perm = itertools.permutations(range(0, len(graph)))
+    maxi = 0
+    mini = 2000
+    for p in perm:
+        distance = 0
+        for j in range(1,len(p)):
+            distance += graph[p[j]][p[j - 1]]
+                    
+        maxi = max(distance, maxi)
+        mini = min(distance,mini)
+    print "max distance: %d" % maxi
+    print "min distance: %d" % mini
+    return maxi,mini
 
 def swap(a,b):
     """ Swaps the values"""
