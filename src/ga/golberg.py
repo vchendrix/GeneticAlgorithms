@@ -15,6 +15,7 @@ __url__ = 'https://github.com/valreee/GeneticAlgorithms'
 __copyright__ = "(C) 2011 Val Hendrix."
 
 import array
+import ga
 from utilities import Random
 
 ncoins = 1000   # number of coin flips
@@ -60,19 +61,17 @@ def simpleGeneticAlgorithm():
         Goldberg,David. (1989). Genetic Algoritms in Search, Optimization and 
         Machine Learning. Appendix C.
     """
-    import simple
     from simple import SimpleGeneticAlgorithm
     
-    popsize, lchrom, maxgen, pcross, pmutation, rand = simple.initData()
+    popsize, lchrom, maxgen, pcross, pmutation, rand = ga.common.initData()
     sga = SimpleGeneticAlgorithm(rand,popsize, lchrom, maxgen, pcross, pmutation);
-    simple.initReport(sga)
+    ga.common.initReport(sga)
     sga.run()
     
 def tspGeneticAlgorithm():
-    import tsp
     from tsp import  TSPGeneticAlgorithm
     
-    popsize, lchrom, maxgen, pcross, pmutation, rand = tsp.initData()
+    popsize, lchrom, maxgen, pcross, pmutation, rand = ga.common.initData()
     graph = [
              [0, 1, 10, 2, 17, 13, 19, 11, 6, 5, 17, 1, 12, 7, 10],
              [1, 0, 12, 9,  4, 2, 7, 19, 12, 4, 14, 3, 17, 18, 16],
@@ -91,8 +90,8 @@ def tspGeneticAlgorithm():
              [10, 16, 18, 2, 17, 9, 19, 9, 3, 19, 1, 4, 17, 1, 0]
              ]
     tspga = TSPGeneticAlgorithm(rand, graph, popsize, maxgen, pcross, pmutation);
-    tsp.initReport(tspga)
-    tspga.run()
+    ga.common.initReport(tspga)
+    tspga.run(silent=False)
 
 if __name__ == '__main__':
     while True:

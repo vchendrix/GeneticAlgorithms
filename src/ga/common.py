@@ -30,6 +30,9 @@ __url__     = 'https://github.com/valreee/GeneticAlgorithms'
 import copy
 from ga.utilities import Random
 
+################
+# Functions
+################
 
 def initData():
     ''' Get user input for the initalization of the
@@ -82,6 +85,12 @@ def selectRoulette(self):
             if partsum >= rand or j == self.popsize: break
             
         return j 
+
+
+################
+# Classes
+################
+
 
 class Chromosome(object):
     '''
@@ -146,8 +155,6 @@ class Individual(object):
     x -- Phenotype - unsigned integer
     xsite -- Crossover site
 
-    bin -- The bitstring as a binary string.
-    bool -- For single bit bitstrings, interpret as True or False.
     
     '''
     
@@ -310,7 +317,16 @@ class GeneticAlgorithm(object):
             print "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
         
     def run(self,silent=True, verbose=False):
-        ''' run the algorithm '''
+        ''' runs the genetic algorithm. First you need to instantiate
+            the subclassed GeneticAlgorithm and then you invoke run.
+            
+            If you would like to output the generation results then do the following
+            >>> gaInstance.run(silent=False)
+            
+            If you would like more verbose results 
+            >>> gaInstance.run(verbose=True)
+            
+        '''
         self.silent=silent
         s = self
         s.gen = 0

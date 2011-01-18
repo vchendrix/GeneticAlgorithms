@@ -9,6 +9,7 @@ TSPGeneticAlgorithm  - a TSP genetic algorithm
 
 Functions:
 
+population - creates the initial population for the TSP genetic algoirthm
 
 Exceptions:
 
@@ -27,6 +28,20 @@ __copyright__ = "(C) 2011 Val Hendrix."
 
  
 def population(self):
+    """
+       Creates the initial population for the TSP genetic algoirthm.
+       This functione expects a TSPGeneticAlgorithm instance or at 
+       least an object with the following attributes
+       
+       popsize - size of the population
+       lchrom - size of the chromosime
+       random - a PRNG
+       decode(chrom) - a function for decoding the chromosime
+       oldpop - the old population array to create
+       maxx - the max x value of all individuals in the population
+       minx - the min x value of all individuals in the population
+       
+    """
     for j in range(self.popsize):
         ''' initial population generation '''
         chrom = ga.common.Chromosome()
@@ -44,9 +59,7 @@ def population(self):
     
 class TSPGeneticAlgorithm(ga.common.GeneticAlgorithm):
     ''' 
-        A simple genetic algorithm (SGA) as defined
-        in Goldberg, David. (1989). Genetic Algorithms in Search
-        Optimization & Machine Learning.
+        A traveling salesman problem solver.
     '''
     
     def __init__(self, random, graph, popsize=100, maxgen=100, pcross=.5, pmutation=.000000001,verbose=False):

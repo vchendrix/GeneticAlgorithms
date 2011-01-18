@@ -7,13 +7,10 @@ This module defines the data structures for a simple genetic algorithm
 
 Classes:
 
-Individual - an individual in a population
 SimpleGeneticAlgorithm  - a simple tripartite algorithm
 
 Functions:
 
-initData -  Gets user input for the initalization of the GA
-initReport - Report header for SGA's output
 
 Exceptions:
 
@@ -22,7 +19,6 @@ Exceptions:
 '''
 
 from __future__ import division
-import copy
 import ga
 from ga.common import Individual
 
@@ -33,6 +29,18 @@ __url__ = 'https://github.com/valreee/GeneticAlgorithms'
 
 
 def population(self):
+    """
+       Creates the initial population for the Simple genetic algoirthm.
+       This function expects a SimpleGeneticAlgorithm instance or at 
+       least an object with the following attributes
+       
+       popsize - size of the population
+       lchrom - size of the chromosime
+       random - a PRNG
+       decode(chrom) - a function for decoding the chromosime
+       oldpop - the old population array to create
+       
+    """
     for j in range(self.popsize):
         ''' initial population generation '''
         chrom = Chromosome(length=self.lchrom)
@@ -62,7 +70,7 @@ class Chromosome(ga.common.Chromosome):
     def __setitem__(self, key, item): 
         """
            Set the allele representing the key with the item
-            >>> chrom=Chromosome(length=20)
+            >>> chrom=Chromosome()
             >>> chrom[1]=True
         """
         
@@ -90,7 +98,7 @@ class SimpleGeneticAlgorithm(object):
         Optimization & Machine Learning.
     '''
     
-    def __init__(self, random, popsize=100, lchrom=30, maxgen=100, pcross=.5, pmutation=.000000001,verbose=False):
+    def __init__(self, random, popsize=30, lchrom=30, maxgen=10, pcross=.6, pmutation=.033,verbose=False):
         ''' Constructor 
             Initializes the population with random individuals
         '''
@@ -100,13 +108,12 @@ class SimpleGeneticAlgorithm(object):
         self.initializePop= lambda: population(self)
         
         super(SimpleGeneticAlgorithm,self).__init__(random, popsize, maxgen, pcross, pmutation,verbose)
-        
-    
-                
+                     
                     
     
     def crossover(self, indiv1, indiv2):
-        '''Cross two parent strings, place in two child strings '''
+        '''Cross two parent strings, place in two child strings
+           using one-point crossover '''
         indivc1=Individual(chrom=Chromosome())
         indivc2=Individual(chrom=Chromosome())
         child1=indivc1.chrom
@@ -145,17 +152,7 @@ class SimpleGeneticAlgorithm(object):
             mutation = False if allele else True                  #Change bit value
         return mutation
             
-    def select(self):
-        ''' Select a single individual via roulette wheel selection '''
-        
-        partsum = 0.0 # parial sum
-        rand = self.random.random() * self.sumfitness
-        for j in range(self.popsize):
-            ''' Find wheel slot '''
-            partsum += self.oldpop[j].fitness
-            if partsum >= rand or j == self.popsize: break
-            
-        return j
+    
     
     def decode(self, chrom):
         '''
@@ -168,76 +165,12 @@ class SimpleGeneticAlgorithm(object):
         n = 10
         return pow(float(x) / self.coef, n)
     
-    def generation(self):
-        '''
-        Create a new generation through select,crossover, and mutation.
-        Generation assumes the population is even numbered
-        '''
-        for j in range(0, self.popsize, 2):
-            # select crossover, and mutation until newpop is filled
-            mate1 = self.select() # pick a pair of mates
-            mate2 = self.select() # what if it mates with itself
-            
-            child1=Individual(chrom=Chromosome(length=self.lchrom))
-            child2=Individual(chrom=Chromosome(length=self.lchrom))
-            
-            #Crossover and mutation - mutation embedded w/in crossover
-            jcross,child1.chrom,child2.chrom = self.crossover(self.oldpop[mate1].chrom, self.oldpop[mate2].chrom,
-                      child1.chrom, child2.chrom)
-            
-            #Decode string, evaluate fitness and record parentage data on both children
-            child1.x = self.decode(child1.chrom)
-            child1.fitness = self.objfunc(child1.x)
-            child1.parent1 = mate1
-            child1.parent2 = mate2
-            child1.xsite = jcross
-            child2.x = self.decode(child2.chrom)
-            child2.fitness = self.objfunc(child2.x)
-            child2.parent1 = mate1
-            child2.parent2 = mate2
-            child2.xsite = jcross 
-            
-            self.newpop[j]=child1
-            self.newpop[j+1]=child2
+    
             
             
-    def statistics(self, pop):
-        ''' Calculate population statistics '''
-        s = self
-        s.sumfitness = pop[0].fitness
-        s.min = pop[0].fitness
-        s.max = pop[0].fitness
+    
             
-        for j in range(1, s.popsize):
-            p = pop[j]
-            s.sumfitness += p.fitness
-            s.max = p.fitness if p.fitness > s.max else s.max
-            s.min = p.fitness if p.fitness < s.min else s.min
-        s.avg = s.sumfitness / s.popsize
-            
-    def report(self):
-        print "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
-        print " Population Report"
-        print " Generation %d\t\t\t\t\t\t\t\t\t\t\t\tGeneration %d" % (self.gen, self.gen+1)
-        print "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
-        print "%s\t%s\t\t\t\t%s\t\t%s\t\t\t|\t%s\t%s\t%s\t%s\t\t\t\t%s\t\t%s" % ('#','string','x','fitness','#','parents','xsite','string','x','fitness')
-        for i in range(self.popsize):
-            op = self.oldpop[i]
-            np = self.newpop[i]
-            print "%d)\t%s\t%d\t%.15f\t|\t%d)\t%s" % (i, op.chrom, op.x, op.fitness, i, np)
-        print "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
-        print " Generation %d & Accumulation Statistics:\t max:%.15f\t min:%.15f\tsumfitness:%.15f\tavg:%.15f\tnmutation:%d\tncross:%d" % (self.gen, self.max, self.min, self.sumfitness,self.avg, self.nmutation, self.ncross)
-        print "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
-        
-    def run(self):
-        ''' run the algorithm '''
-        s = self
-        s.gen = 0
-        for s.gen in range(s.maxgen):
-            s.generation()
-            s.statistics(s.newpop)
-            s.report()
-            s.oldpop = copy.copy(s.newpop)
+   
                 
     
         
