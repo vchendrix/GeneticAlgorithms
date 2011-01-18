@@ -31,7 +31,19 @@ __author__ = "Val Hendrix (val.hendrix@me.com)"
 __date__ = 'Jan 7, 2011'
 __url__ = 'https://github.com/valreee/GeneticAlgorithms'
 
-    
+
+def population(self):
+    for j in range(self.popsize):
+        ''' initial population generation '''
+        chrom = Chromosome(length=self.lchrom)
+        for j1 in range(self.lchrom):
+            chrom[j1] = self.random.flip(0.5)
+        x = self.decode(chrom)
+        fitness = (self.objfunc(x))
+        parent1 = 0
+        parent2 = 0
+        xsite = 0
+        self.oldpop[j]=Individual(chrom, self.lchrom, x, fitness, parent1, parent2, xsite) 
 
 class Chromosome(ga.common.Chromosome):
     ''' An artificial chromosomve '''
@@ -46,12 +58,6 @@ class Chromosome(ga.common.Chromosome):
         super(Chromosome, self).__init__()
         self.uint = 0
             
-    def __getitem__(self, key): 
-        """
-            Return boolean representing the allele for the given key
-            >>> Chromosome(length=20)[1]
-        """
-        return self.alleles[key]
     
     def __setitem__(self, key, item): 
         """
@@ -84,49 +90,30 @@ class SimpleGeneticAlgorithm(object):
         Optimization & Machine Learning.
     '''
     
-    def __init__(self, random, popsize=100, lchrom=30, maxgen=100, pcross=.5, pmutation=.000000001):
+    def __init__(self, random, popsize=100, lchrom=30, maxgen=100, pcross=.5, pmutation=.000000001,verbose=False):
         ''' Constructor 
             Initializes the population with random individuals
         '''
-        self.oldpop = []         # Two non-overlapping populations
-        self.newpop = []   
-        for i in range(popsize):
-            self.oldpop.append(None) 
-        for i in range(popsize):
-            self.newpop.append(None)         
-        self.gen = 0
-        self.sumfitness = 0.0    # sum of population fitness (Sigma f)
-        self.nmutation = 0
-        self.ncross = 0               # Integer Statistics
-        self.avg = 0.0
-        self.max = 0.0
-        self.min = 0.0             # Float Statistics
-        self.random = random
-        self.popsize = popsize
-        self.lchrom = lchrom
-        self.maxgen = maxgen
-        self.pcross = pcross
-        self.pmutation = pmutation
         self.coef = pow(2,self.lchrom)-1   # coefficient to normalize the domain 2^30-1  where 30 is the string size
-       
-        for j in range(self.popsize):
-            ''' initial population generation '''
-            chrom = Chromosome(length=self.lchrom)
-            for j1 in range(self.lchrom):
-                chrom[j1] = self.random.flip(0.5)
-            x = self.decode(chrom)
-            fitness = (self.objfunc(x))
-            parent1 = 0
-            parent2 = 0
-            xsite = 0
-            self.oldpop[j]=Individual(chrom, lchrom, x, fitness, parent1, parent2, xsite)
-            
-        self.statistics(self.oldpop)
+        
+        # set the anonymous population function
+        self.initializePop= lambda: population(self)
+        
+        super(SimpleGeneticAlgorithm,self).__init__(random, popsize, maxgen, pcross, pmutation,verbose)
+        
+    
                 
                     
     
-    def crossover(self, parent1, parent2, child1, child2):
+    def crossover(self, indiv1, indiv2):
         '''Cross two parent strings, place in two child strings '''
+        indivc1=Individual(chrom=Chromosome())
+        indivc2=Individual(chrom=Chromosome())
+        child1=indivc1.chrom
+        child2=indivc2.chrom
+        parent1=indiv1.chrom
+        parent2=indiv2.chrom
+            
         j = 0
         if self.random.flip(self.pcross):                   # Do flip with p(cross)
             jcross = self.random.rnd(1, self.lchrom - 1)    # Cross between 1 and l-1
@@ -144,7 +131,7 @@ class SimpleGeneticAlgorithm(object):
             for j in range(jcross + 1, self.lchrom):
                 child1[j] = self.mutation(parent2[j])
                 child2[j] = self.mutation(parent1[j])   
-        return jcross,child1,child2
+        return jcross,indivc1,indivc2
             
     def mutation(self, allele):
         ''' 

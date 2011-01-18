@@ -26,7 +26,20 @@ __url__ = 'https://github.com/valreee/GeneticAlgorithms'
 __copyright__ = "(C) 2011 Val Hendrix."
 
  
-    
+def population(self):
+    for j in range(self.popsize):
+        ''' initial population generation '''
+        chrom = ga.common.Chromosome()
+        alleles=range(self.lchrom)
+        for j1 in range(self.lchrom):
+            index=self.random.rnd(0,len(alleles)-1)
+            chrom[j1] = alleles[index]
+            alleles.pop(index)
+        x = self.decode(chrom)
+            
+        self.oldpop[j]=Individual(chrom, self.lchrom, x, 0)
+        self.maxx=max(x,self.maxx)  
+        self.minx=max(x,self.minx)             
 
     
 class TSPGeneticAlgorithm(ga.common.GeneticAlgorithm):
@@ -46,30 +59,21 @@ class TSPGeneticAlgorithm(ga.common.GeneticAlgorithm):
         self.lchrom = len(graph)
         
         # set the anonymous population function
-        self.initializePop= lambda: self.population()
+        self.initializePop= lambda: population(self)
         
         super(TSPGeneticAlgorithm,self).__init__(random, popsize, maxgen, pcross, pmutation,verbose)
-        
-        
-    
-    def population(self):
-        for j in range(self.popsize):
-            ''' initial population generation '''
-            chrom = ga.common.Chromosome()
-            alleles=range(self.lchrom)
-            for j1 in range(self.lchrom):
-                index=self.random.rnd(0,len(alleles)-1)
-                chrom[j1] = alleles[index]
-                alleles.pop(index)
-            x = self.decode(chrom)
-            
-            self.oldpop[j]=Individual(chrom, self.lchrom, x, 0)
-            self.maxx=max(x,self.maxx)  
-            self.minx=max(x,self.minx)                
+           
                     
     
-    def crossover(self, parent1, parent2, child1, child2):
+    def crossover(self, indiv1, indiv2):
         '''Cross two parent strings, place in two child strings '''
+        indivc1=Individual(chrom=ga.common.Chromosome())
+        indivc2=Individual(chrom=ga.common.Chromosome())
+        child1=indivc1.chrom
+        child2=indivc2.chrom
+        parent1=indiv1.chrom
+        parent2=indiv2.chrom
+        
         j = 0
         
         if self.random.flip(self.pcross):                   # Do flip with p(cross)
@@ -125,7 +129,7 @@ class TSPGeneticAlgorithm(ga.common.GeneticAlgorithm):
                 child1[j] = parent1[j]
                 child2[j] = parent2[j]
             
-        return (jcross1,jcross2),child1,child2
+        return (jcross1,jcross2),indivc1,indivc2
     
     def mutate(self, i,chrom):
         ''' 

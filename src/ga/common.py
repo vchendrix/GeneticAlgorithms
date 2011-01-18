@@ -71,15 +71,15 @@ def initReport(sga):
     print "  Initial Population sum of x  : %.3f" % sga.sumx
     print "------------------------------------------------------------------------------------------------------------------------------------\n"
     
-def selectRoulette(random,sumfitness,pop):
+def selectRoulette(self):
         ''' Select a single individual via roulette wheel selection '''
-        popsize=len(pop)
+        self.popsize=len(self.oldpop)
         partsum = 0.0 # parial sum
-        rand = random.random() * sumfitness
-        for j in range(popsize):
+        rand = self.random.random() * self.sumfitness
+        for j in range(self.popsize):
             ''' Find wheel slot '''
-            partsum += pop[j].fitness
-            if partsum >= rand or j == popsize: break
+            partsum += self.oldpop[j].fitness
+            if partsum >= rand or j == self.popsize: break
             
         return j 
 
@@ -200,6 +200,9 @@ class GeneticAlgorithm(object):
         self.maxx=0
         self.minx=0
         self.avgx=0
+        
+        # ga operations
+        self.select= lambda: selectRoulette(self)
 
         self.initializePop()
             
@@ -208,24 +211,26 @@ class GeneticAlgorithm(object):
     def initializePop(self):
         pass          
     
-    def crossover(self, parent1, parent2, child1, child2):
+    def crossover(self, indiv1, indiv2):
         '''Cross two parent strings, place in two child strings '''
+        pass
+            
+    def mutate(self, i,chrom):
+        pass
+      
+    def select(self):
+        pass
+    
+    def decode(self, chrom):
+        pass
+    
+    def objfunction(self,individual):
         pass
     
     def mutation(self,chrom):
         for i in range(len(chrom)):
             self.mutate(i,chrom)
         return chrom
-            
-    def mutate(self, i,chrom):
-        pass
-      
-    def select(self):
-        return selectRoulette(self.random,self.sumfitness,self.oldpop)
-    
-    def decode(self, chrom):
-        pass
-    
     
     def generation(self):
         '''
@@ -239,12 +244,9 @@ class GeneticAlgorithm(object):
             mate1 = self.select() # pick a pair of mates
             mate2 = self.select() # what if it mates with itself
             
-            child1=Individual(chrom=Chromosome())
-            child2=Individual(chrom=Chromosome())
             
             #Crossover and mutation - mutation embedded w/in crossover
-            jcross,child1.chrom,child2.chrom = self.crossover(self.oldpop[mate1].chrom, self.oldpop[mate2].chrom,
-                      child1.chrom, child2.chrom)
+            jcross,child1,child2 = self.crossover(self.oldpop[mate1], self.oldpop[mate2])
             child1.chrom=self.mutation(child1.chrom)
             child2.chrom=self.mutation(child2.chrom)
             
@@ -267,8 +269,7 @@ class GeneticAlgorithm(object):
         self.maxx= maxx
         self.minx=minx
         
-    def objfunction(self,individual):
-        pass
+    
         
     def statistics(self,pop):
         """ Calculates the GA stats for the latest population """
