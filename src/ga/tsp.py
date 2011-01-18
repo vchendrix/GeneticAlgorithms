@@ -2,18 +2,13 @@
 Created on Jan 7, 2011
 
 This module defines the data structures for a traveling salesman genetic algorithm
-    Goldberg, David. (1989). Genetic Algorithms in Search, 
-    Optimization and Machine Learning. Appendix Chapter 3 
 
 Classes:
 
-Tour - an individual in a population
 TSPGeneticAlgorithm  - a TSP genetic algorithm
 
 Functions:
 
-initData -  Gets user input for the initalization of the GA
-initReport - Report header for SGA's output
 
 Exceptions:
 
@@ -108,24 +103,22 @@ class TSPGeneticAlgorithm(ga.common.GeneticAlgorithm):
             
             # Now add the rest of the alleles to the children in order
             # get remaining alleles from parent 1
-            child2Extra=[]
+            j=len(child2)
             if(len(child1)< self.lchrom):
                 for p in parent2Part:
                     if p not in child1:
                         child1[i]=p
                         i+=1
                     elif p not in child2:
-                        child2Extra.append(p)
-                for p in child2Extra:
-                    parent2Part.remove(p)
+                        child2[len(child2)]=p
                 # not get the others from parent two
                 for p in parent1Part:
                     if p not in child1:
                         child1[i]=p
                         i+=1
                     elif p not in child2:
-                        child2[len(child2)]=p
-                child2.alleles.extend(child2Extra)
+                        child2.alleles.insert(j,p)
+                        j+=1
                 
         else:
             for j in range(self.lchrom):

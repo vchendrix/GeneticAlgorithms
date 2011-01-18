@@ -173,7 +173,7 @@ class GeneticAlgorithm(object):
         Optimization & Machine Learning.
     '''
     
-    def __init__(self, random, popsize=100, maxgen=100, pcross=.5, pmutation=.000000001,verbose=False,):
+    def __init__(self, random, popsize=100, maxgen=30, pcross=.6, pmutation=.033,verbose=False,):
         ''' Constructor 
             Initializes the population with random individuals
         '''
