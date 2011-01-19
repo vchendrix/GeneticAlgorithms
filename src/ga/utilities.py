@@ -26,7 +26,6 @@ __version__ = '0.1'
 __author__ = "Val Hendrix (val.hendrix@me.com)"
 __date__ = 'Jan 7, 2011'
 __url__ = 'https://github.com/valreee/GeneticAlgorithms'
-__copyright__ = "(C) 2011 Val Hendrix."
 
 import array
 import itertools
