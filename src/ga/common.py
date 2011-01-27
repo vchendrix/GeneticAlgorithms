@@ -119,10 +119,9 @@ class Chromosome(object):
         """
            Set the allele representing the key with the item
         """
-        if(key == len(self.alleles)):
+        if(key >= len(self.alleles)):
             self.alleles.append(item)
-        else:
-                    
+        else:    
             self.alleles[key] = item
             
     def __str__(self):
@@ -158,7 +157,7 @@ class Individual(object):
     
     '''
     
-    def __init__(self, chrom, max=0, x=0, fitness=0, parent1=0, parent2=0, xsite=(0,0)):
+    def __init__(self, chrom, max=0, x=None, fitness=0, parent1=0, parent2=0, xsite=(0,0), **kwargs):
         ''' Constructor '''
         self.max = max    
         self.chrom = chrom  # Genotype - bitstring
@@ -167,6 +166,7 @@ class Individual(object):
         self.parent1 = parent1                    # Parents and crossover point
         self.parent2 = parent2
         self.xsite = xsite
+        self.__dict__.update(kwargs)
         
         
     
@@ -252,7 +252,7 @@ class GeneticAlgorithm(object):
             mate2 = self.select() # what if it mates with itself
             
             
-            #Crossover and mutation - mutation embedded w/in crossover
+            #Crossover and mutation -
             jcross,child1,child2 = self.crossover(self.oldpop[mate1], self.oldpop[mate2])
             child1.chrom=self.mutation(child1.chrom)
             child2.chrom=self.mutation(child2.chrom)
@@ -280,7 +280,7 @@ class GeneticAlgorithm(object):
         
     def statistics(self,pop):
         """ Calculates the GA stats for the latest population """
-        pop[0].fitness=self.objfunction(pop[0])
+        pop[0].fitness=self.objfunction(pop[0].x)
         self.max=pop[0].fitness
         self.min=pop[0].fitness
         self.sumfitness=pop[0].fitness
@@ -289,7 +289,7 @@ class GeneticAlgorithm(object):
         # statistics
         for i in range(1,len(pop)): 
             p=pop[i]
-            p.fitness=self.objfunction(p)
+            p.fitness=self.objfunction(p.x)
             self.sumfitness+=p.fitness
             self.max=max(self.max,p.fitness)
             self.min=min(self.min,p.fitness)
@@ -328,6 +328,7 @@ class GeneticAlgorithm(object):
             
         '''
         self.silent=silent
+        self.verbose=verbose
         s = self
         s.gen = 0
         for s.gen in range(s.maxgen):

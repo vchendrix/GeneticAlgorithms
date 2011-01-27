@@ -7,10 +7,14 @@ This module defines the data structures for a simple genetic algorithm
 
 Classes:
 
+Chromosome - an artificial chromosome (bit string) extends ga.common.Chromosome
+   by adding and unsigned int to represent the value of the chromosome as well
+   as the code that manages it.
 SimpleGeneticAlgorithm  - a simple tripartite algorithm
 
 Functions:
 
+population - initializes the old population for the Simple genetic algorithm
 
 Exceptions:
 
@@ -20,7 +24,7 @@ Exceptions:
 
 from __future__ import division
 import ga
-from ga.common import Individual
+from ga.common import GeneticAlgorithm,Individual
 
 __version__ = '0.1'
 __author__ = "Val Hendrix (val.hendrix@me.com)"
@@ -43,11 +47,11 @@ def population(self):
     """
     for j in range(self.popsize):
         ''' initial population generation '''
-        chrom = Chromosome(length=self.lchrom)
+        chrom = Chromosome()
         for j1 in range(self.lchrom):
             chrom[j1] = self.random.flip(0.5)
         x = self.decode(chrom)
-        fitness = (self.objfunc(x))
+        fitness = (self.objfunction(x))
         parent1 = 0
         parent2 = 0
         xsite = 0
@@ -79,7 +83,7 @@ class Chromosome(ga.common.Chromosome):
                 self.uint += pow(2, key)
             elif key < len(self.alleles):
                 self.uint -= pow(2, key)
-        self.__setattr__(key,item)
+        super(Chromosome, self).__setitem__(key,item)
        
     def __str__(self):
         s = ""
@@ -91,7 +95,7 @@ class Chromosome(ga.common.Chromosome):
 
 
     
-class SimpleGeneticAlgorithm(object):
+class SimpleGeneticAlgorithm(GeneticAlgorithm):
     ''' 
         A simple genetic algorithm (SGA) as defined
         in Goldberg, David. (1989). Genetic Algorithms in Search
@@ -102,13 +106,13 @@ class SimpleGeneticAlgorithm(object):
         ''' Constructor 
             Initializes the population with random individuals
         '''
-        self.coef = pow(2,self.lchrom)-1   # coefficient to normalize the domain 2^30-1  where 30 is the string size
+        self.lchrom=lchrom
+        self.coef = pow(2,lchrom)-1   # coefficient to normalize the domain 2^30-1  where 30 is the string size
         
         # set the anonymous population function
         self.initializePop= lambda: population(self)
         
-        super(SimpleGeneticAlgorithm,self).__init__(random, popsize, maxgen, pcross, pmutation,verbose)
-                     
+        super(SimpleGeneticAlgorithm,self).__init__(random, popsize, maxgen, pcross, pmutation,verbose)             
                     
     
     def crossover(self, indiv1, indiv2):
@@ -123,36 +127,33 @@ class SimpleGeneticAlgorithm(object):
             
         j = 0
         if self.random.flip(self.pcross):                   # Do flip with p(cross)
-            jcross = self.random.rnd(1, self.lchrom - 1)    # Cross between 1 and l-1
+            jcross = self.random.rnd(0, self.lchrom - 1)    # Cross between 0 and l-1
             self.ncross += 1                                # Increment crossover counter
         else:
             jcross = self.lchrom
         
         # First exchange, 1 to 1 and 2 to 2
         for j in range(jcross):
-            child1[j] = self.mutation(parent1[j])
-            child2[j] = self.mutation(parent2[j])
+            child1[j] = parent1[j]
+            child2[j] = parent2[j]
             
         # Second Exchange, 1 to 2 and 2 to 1
         if jcross != self.lchrom:
-            for j in range(jcross + 1, self.lchrom):
-                child1[j] = self.mutation(parent2[j])
-                child2[j] = self.mutation(parent1[j])   
+            for j in range(jcross, self.lchrom):
+                child1[j] = parent2[j]
+                child2[j] = parent1[j]
         return jcross,indivc1,indivc2
             
-    def mutation(self, allele):
+    def mutate(self, i,chrom):
         ''' 
             Mutate and allele with pmutation, count number
             of mutations
         '''
         mutate = self.random.flip(self.pmutation)   #Flip biased coin
-        mutation = allele
         if mutate:
             self.nmutation += 1
-            mutation = False if allele else True                  #Change bit value
-        return mutation
-            
-    
+            chrom[i]=False if chrom[i] else True
+
     
     def decode(self, chrom):
         '''
@@ -160,7 +161,7 @@ class SimpleGeneticAlgorithm(object):
         '''
         return chrom.uint
     
-    def objfunc(self, x):
+    def objfunction(self, x):
         ''' Fitness function - f(x) = x**n '''
         n = 10
         return pow(float(x) / self.coef, n)
