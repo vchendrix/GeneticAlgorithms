@@ -71,27 +71,29 @@ class Test(unittest.TestCase):
 
     def testCreateIrisGraph(self):
         V=self.V
-        self.assertEqual(len(V), 23, "Graph is the incorrect length")
-        self.assertEqual(len(V[0].edges), 22, "Graph is the incorrect length")
+        self.assertEqual(len(V), 150, "Graph is the incorrect length")
+        self.assertEqual(len(V[0].edges), 149, "Graph is the incorrect length")
              
 
         
     def testPrims(self):
         V=self.V
-        self.assertEqual(len(V), 23, "Graph is the incorrect length")
-        self.assertEqual(len(V[0].edges), 22, "Graph is the incorrect length")
+        self.assertEqual(len(V), 150, "Graph is the incorrect length")
+        self.assertEqual(len(V[0].edges), 149, "Graph is the incorrect length")
         
         
         Enew = primsAlgorithm(V,self.random)
         self.assertEqual(len(Enew), len(V)-1, "Incorrect Number of edges")
         
-    def testMockInitialization(self):
+    def testMock(self):
         V=self.V
-        self.assertEqual(len(V), 23, "Graph is the incorrect length")
-        self.assertEqual(len(V[0].edges), 22, "Graph is the incorrect length")
+        self.assertEqual(len(V), 150, "Graph is the incorrect length")
+        self.assertEqual(len(V[0].edges), 149, "Graph is the incorrect length")
         
         mock = Mock(V,self.random)
         self.assertEqual(max(50,int(1/len(V))), len(mock.internalPop), "Mock internal pop is not 50 or 1/N")
+        
+        mock.run()
         
 
 if __name__ == "__main__":

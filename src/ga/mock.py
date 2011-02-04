@@ -44,6 +44,8 @@ import sets
 
 from ga.common import Chromosome, Individual
 
+ 
+
 #############
 # Functions
 #############
@@ -333,6 +335,12 @@ def primsAlgorithm(V,random=None):
 # Classes
 #############
 
+class Pareto:
+    
+    DOMINATED=0
+    NONDOMINATED=1
+    DOMINATES=2
+    
 class Mock(object):
     """ 
         Multiobjective Clustering with K-determiniation
@@ -362,12 +370,49 @@ class Mock(object):
         mock = Mock(V,random)
         """
         
+        self.hyperGridDepth=3
         self.random=random
-        self.niches=[]
+        self.externalPop=[]
+        self.internalPop=[]
+        self.hyperboxDimension=(2**self.hyperGridDepth)
+        self.niches=HyperGrid(self.hyperboxDimension)
+        self.nicheUnit=dict(deviation=0.0,connectivity=0.0)
+        self.maxNiche=None
+        self.minNiche=None
+        self.maxDeviation=None
+        self.minDeviation=None
+        self.maxConnectivity=None
+        self.minConnectivity=None
         self.graph=V
         self.ipsize=max(50,int(len(V)/20))
         self.internalPop,self.externalPop=self.initialize(V,random,self.ipsize)
-        pass  
+        
+        
+    
+    def updateNicheUnit(self,individual):
+        if(self.maxConnectivity==None):
+            self.maxConnectivity=individual.fitness['connectivity']
+            self.minConnectivity=individual.fitness['connectivity']
+            self.maxDeviation=individual.fitness['deviation']
+            self.minDeviation=individual.fitness['deviation']
+        else:
+            self.maxConnectivity=max(individual.fitness['connectivity'],self.maxConnectivity)
+            self.minConnectivity=min(individual.fitness['connectivity'],self.minConnectivity)
+            self.maxDeviation=max(individual.fitness['deviation'],self.maxConnectivity)
+            self.minDeviation=min(individual.fitness['deviation'],self.minConnectivity)
+        self.nicheUnit['deviation']=(self.maxDeviation-self.minDeviation+1)/self.hyperboxDimension
+        self.nicheUnit['connectivity']=float(self.maxConnectivity-self.minConnectivity+1)/self.hyperboxDimension
+        
+        
+    def getNiche(self,individual):
+        """ determines the current niche for the given individual 
+            Returns a tuple (connectivity, deviation)
+        """
+        d=(int(individual.fitness['deviation']-self.minDeviation)/(self.nicheUnit['deviation']))
+        c=(int(individual.fitness['connectivity']-self.minConnectivity)/(self.nicheUnit['connectivity']))
+        return (int(c),int(d))
+         
+         
     
     def initialize(self,V,random,popsize):
         """
@@ -390,51 +435,114 @@ class Mock(object):
             for edge in ilargest:
                 chrom[edge.v1.id]=edge.v1.id
             x=decode(chrom) # This decodes the number of clusters
-            individual = Individual(chrom,len(chrom),x,0)
+            individual = Individual(chrom,len(chrom),x,0,niche=0)
             internalPop.append(individual) 
             individual.fitness=objectiveFunction(individual,self.graph) 
             self.updateExternalPopulation(individual,externalPop)
                 
         return internalPop,externalPop  
+    
+    def normalizeObjectiveFunction(self):
+        dDenom=(self.maxDeviation-self.minDeviation)
+        cDenom=(self.maxConnectivity-self.minConnectivity)
+        for s in self.externalPop:
+            s.fitness['deviation']=(s.fitness['deviation']-self.minDeviation)/dDenom
+            s.fitness['connectivity']=(s.fitness['connectivity']-self.minConnectivity)/cDenom
+            
       
-    def isSolutionNondominated(self,s1,s2):
-        """ return True if s1 is not dominated by s2 """
-        if s1.fitness.deviation < s1.fitness.deviation or s2.fitness.deviation < s2.fitness.deviation:
-            return True
+    def getSolutionParetoRelationship(self,s1,s2):
+        """ return s1's relatinship to s2 """
+        dev=s1.fitness['deviation'] < s1.fitness['deviation']  
+        conn=s2.fitness['connectivity'] < s2.fitness['connectivity']
+        if dev and conn: return Pareto.DOMINATES
+        elif dev or conn: return Pareto.NONDOMINATED
+        else: return Pareto.DOMINATED
+        
+        
     
-    def updateExternalPopulation(self,solution,externalPop):
+    def updateExternalPopulation(self,individual,externalPop):
         """ Updates externalPop with the solution, if it dominates """
-        nondominated=False
         for i in externalPop:
+            pareto=self.getSolutionParetoRelationship(individual, i) 
+            if(pareto >= Pareto.NONDOMINATED):
+                if pareto == Pareto.DOMINATES:
+                    externalPop.remove(i)
+            else: 
+                return # solution is dominated 
+        
+        self.updateNicheUnit(individual)
+        externalPopFull=len(self.externalPop) >= self.EPSIZE
+        if not externalPopFull:
+            externalPop.append(individual)
+        elif externalPopFull and self.maxNiche!=None:
+            i=self.random.rnd(0,len(self.niches[self.maxNiche]))
+            s=externalPop[self.niches[self.maxNiche]]
+            externalPop.remove(s)
+            externalPop.append(individual)
+        
+        # update niche counts
+        self.niches.clear()
+        for i in range(len(externalPop)):
             s=externalPop[i]
-            if(self.isSolutionNondominated(solution, s)):
-                nondominated=True
-                externalPop.remove(s)
-        if nondominated and len(self.externalPop) < self.EPSIZE:
-            externalPop.append(solution)
-        else:
-            pass # need to figure out how to manage niches
-    
+            s.niche= self.getNiche(s)
+            self.niches[s.niche]=i
+            
+            
     def run(self):
         for i in range(self.GEN):
+            self.internalPop=[] # reset the internal population
             for j in range(self.ipsize):
                 #select a populated niche uniformly at random from externalPop
+                n=self.random.rnd(0,self.hyperboxDimension**2)
                 #select a solution uniformly at random from niche
+                niche=self.niches[(int(self.hyperboxDimension/n),n % self.hyperboxDimension)]
+                
                 #IP=IP U {si}
-                pass
-            for j in range(self.ipsize):
-                if self.random.flip(self.Pc):
-                    # crossover
-                    pass
-                #mutate
-                j+=2
+                s=self.random.rnd(0,len(niche))
+                self.internalPop.append(s)
+                
+                
+            for j in range(0,self.ipsize,2):
+                crossoverUniform(self.internalPop[j], self.internalPop[j+1], self.random, self.Pc)
+                mutationNearestNeighbor()
+                
             for j in range(self.ipsize):
                 self.internalPop[j].fitness=objectiveFunction(self.internalPop[j],self.graph) 
                 self.updateExternalPopulation(self.internalPop[j])
             self.internalPop=[]
             
-            
-                
+class HyperGrid(object):
+    """ This represents a hypergrid used in region based niching"""        
+    
+    def __init__(self, dimension):
+        """ Constructor """  
+        self.dimension=dimension
+        self.grid = [[[]]*dimension] * dimension 
+        self.max=None
+        self.min=None
+        
+    def __getitem__(self,key):
+        return self.grid[key[0]][key[1]]
+        
+    def __setitem__(self, key, item): 
+        """
+          Set the niche.
+          The key is a tuple (x,y)
+          The item can be anything
+            >>> key=tupe(5,2)
+            >>> item=anObject
+            >>> hypergrid[key]=item
+        """
+        if not isinstance(key,tuple):
+            raise Exception('key must be a tuple')
+        self.grid[key[0]][key[1]].append(item)
+        self.max =self.grid[key[0]][key[1]] if self.max==None or len(self.grid[key[0]][key[1]]) > len(self.grid[self.max[0]][self.max[1]]) else self.grid[self.max[0]][self.max[1]]
+        self.min =self.grid[key[0]][key[1]] if self.min==None or len(self.grid[key[0]][key[1]]) > len(self.grid[self.min[0]][self.min[1]]) else self.grid[self.min[0]][self.min[1]]
+         
+    def clear(self):
+        self.grid = [[[]]*self.dimension] * self.dimension 
+        self.max=None
+        self.min=None
             
 class Edge(object):
     """
