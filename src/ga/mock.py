@@ -8,6 +8,7 @@ algorithm.
 Classes
 
 Edge - defines an edge in a graph
+Hypergrid - define the hypergrid
 Mock - the MOCK genetic algorithm
 Vertex - define a vertex in a graph
 
@@ -40,6 +41,7 @@ __url__ = 'https://github.com/valreee/GeneticAlgorithms'
 import copy
 import heapq
 import math
+import networkx as nx
 import sets
 
 from ga.common import Chromosome, Individual
@@ -157,6 +159,15 @@ def createIrisGraph(filename):
     
     return V
 
+def createNxGraph(kassign,V):
+    """ creates a nextwork x graph from the local adjacency based matrix """
+    G=nx.Graph()
+    rangeV=range(len(V))
+    for i in rangeV:
+        G.add_node(i,value=V[i].value,group=V[i].group)
+        G.add_edge(i,kassign[i])            
+    return G
+
 def createLocusBasedAdjacencyList(V,E):
     """
         Creates a Locus-Based Adjacency representation 
@@ -228,11 +239,9 @@ def decode(chrom):
     """
     cc=0
     clusterAssignment=[None]*len(chrom)
-    
-    
-    ctr=0
     previous=[None]*len(chrom)
     for i in range(len(chrom)):
+        ctr=0
         if clusterAssignment[i]==None:
             clusterAssignment[i]=cc
             neighbor=chrom[i]
@@ -250,8 +259,8 @@ def decode(chrom):
                     ctr-=1
             else:
                 cc+=1
-    print "k:%d, kassgin:%s" %(cc+1,clusterAssignment)
-    return dict(k=cc+1,kassign=clusterAssignment)                 
+    # print "k:%d, kassgin:%s" %(cc+1,clusterAssignment)
+    return dict(k=cc,kassign=clusterAssignment)                 
 
 def euclideanDistance(x,y):
     """ Finds the euclidean distance between two n-tuples """
@@ -261,8 +270,22 @@ def euclideanDistance(x,y):
     d = math.sqrt(d)
     return d 
             
-def mutationNearestNeighbor():
-    pass
+def mutationNearestNeighbor(random,pm,chrom,G,L):
+    """
+        This is call mutation on the restricted nearest neighbors.
+        It mutates a chromosome based on the L nearest neighbors
+        supplied in the given graph G.
+        
+    """
+    lchrom=len(chrom)
+    for c in range(lchrom):
+        ledges=len(G[c].edges)
+        Lnn=L if ledges > L else ledges 
+        if random.flip(pm): # mutation with the probabilit pm
+            i=random.rnd(0,Lnn-1)
+            chrom[c]=G[c].edges[i].mate(G[c]).id
+    return chrom
+
 
 def objectiveFunction(individual, graph):
     """
@@ -346,10 +369,10 @@ class Mock(object):
         Multiobjective Clustering with K-determiniation
     """   
     
-    L=20
+    L=10
     GEN=200
-    EPSIZE=1000
-    Pc=.7
+    EPSIZE=100
+    Pc=.79
     
     def __init__(self,V,random):
         """
@@ -364,18 +387,22 @@ class Mock(object):
         The algorithm requires a fully connected graph representing the dataset as 
         well as a seeded random number generator
         
-        V=createIrisGraph("./bezdekIris.data")
-        random = ga.utilities.Random()
-        random.warmupRandom(seed)
-        mock = Mock(V,random)
+        >>> import ga
+        >>> from ga.mock import createIrisGraph,Mock
+        >>> V=createIrisGraph("./bezdekIris.data")
+        >>> random = ga.utilities.Random()
+        >>> random.warmupRandom(seed)
+        >>> mock = Mock(V,random)
         """
         
+        self.Pm=0.1
         self.hyperGridDepth=3
+        self.niches=dict()
         self.random=random
         self.externalPop=[]
         self.internalPop=[]
         self.hyperboxDimension=(2**self.hyperGridDepth)
-        self.niches=HyperGrid(self.hyperboxDimension)
+        self.hypergrid=HyperGrid(self.hyperboxDimension)
         self.nicheUnit=dict(deviation=0.0,connectivity=0.0)
         self.maxNiche=None
         self.minNiche=None
@@ -384,7 +411,7 @@ class Mock(object):
         self.maxConnectivity=None
         self.minConnectivity=None
         self.graph=V
-        self.ipsize=max(50,int(len(V)/20))
+        self.ipsize=max(100,int(len(V)/20))
         self.internalPop,self.externalPop=self.initialize(V,random,self.ipsize)
         
         
@@ -398,10 +425,10 @@ class Mock(object):
         else:
             self.maxConnectivity=max(individual.fitness['connectivity'],self.maxConnectivity)
             self.minConnectivity=min(individual.fitness['connectivity'],self.minConnectivity)
-            self.maxDeviation=max(individual.fitness['deviation'],self.maxConnectivity)
-            self.minDeviation=min(individual.fitness['deviation'],self.minConnectivity)
-        self.nicheUnit['deviation']=(self.maxDeviation-self.minDeviation+1)/self.hyperboxDimension
-        self.nicheUnit['connectivity']=float(self.maxConnectivity-self.minConnectivity+1)/self.hyperboxDimension
+            self.maxDeviation=max(individual.fitness['deviation'],self.maxDeviation)
+            self.minDeviation=min(individual.fitness['deviation'],self.minDeviation)
+        self.nicheUnit['deviation']=math.ceil((self.maxDeviation-self.minDeviation+1)/self.hyperboxDimension)
+        self.nicheUnit['connectivity']=math.ceil(float(self.maxConnectivity-self.minConnectivity+1)/self.hyperboxDimension)
         
         
     def getNiche(self,individual):
@@ -439,26 +466,22 @@ class Mock(object):
             internalPop.append(individual) 
             individual.fitness=objectiveFunction(individual,self.graph) 
             self.updateExternalPopulation(individual,externalPop)
-                
         return internalPop,externalPop  
-    
+     
     def normalizeObjectiveFunction(self):
         dDenom=(self.maxDeviation-self.minDeviation)
         cDenom=(self.maxConnectivity-self.minConnectivity)
         for s in self.externalPop:
             s.fitness['deviation']=(s.fitness['deviation']-self.minDeviation)/dDenom
             s.fitness['connectivity']=(s.fitness['connectivity']-self.minConnectivity)/cDenom
-            
       
     def getSolutionParetoRelationship(self,s1,s2):
         """ return s1's relatinship to s2 """
-        dev=s1.fitness['deviation'] < s1.fitness['deviation']  
-        conn=s2.fitness['connectivity'] < s2.fitness['connectivity']
+        dev=s1.fitness['deviation'] < s2.fitness['deviation']  
+        conn=s1.fitness['connectivity'] < s2.fitness['connectivity']
         if dev and conn: return Pareto.DOMINATES
         elif dev or conn: return Pareto.NONDOMINATED
         else: return Pareto.DOMINATED
-        
-        
     
     def updateExternalPopulation(self,individual,externalPop):
         """ Updates externalPop with the solution, if it dominates """
@@ -475,17 +498,22 @@ class Mock(object):
         if not externalPopFull:
             externalPop.append(individual)
         elif externalPopFull and self.maxNiche!=None:
-            i=self.random.rnd(0,len(self.niches[self.maxNiche]))
-            s=externalPop[self.niches[self.maxNiche]]
+            i=self.random.rnd(0,len(self.hypergrid[self.maxNiche]))
+            s=externalPop[self.hypergrid[self.maxNiche]]
             externalPop.remove(s)
             externalPop.append(individual)
         
         # update niche counts
+        self.hypergrid.clear()
         self.niches.clear()
         for i in range(len(externalPop)):
             s=externalPop[i]
             s.niche= self.getNiche(s)
-            self.niches[s.niche]=i
+            self.hypergrid[s.niche]=i
+            try:
+                self.niches[s.niche]+=1
+            except:
+                self.niches[s.niche]=1
             
             
     def run(self):
@@ -493,23 +521,34 @@ class Mock(object):
             self.internalPop=[] # reset the internal population
             for j in range(self.ipsize):
                 #select a populated niche uniformly at random from externalPop
-                n=self.random.rnd(0,self.hyperboxDimension**2)
+                listNiches=self.niches.items()
+                n=self.random.rnd(0,len(listNiches)-1)
                 #select a solution uniformly at random from niche
-                niche=self.niches[(int(self.hyperboxDimension/n),n % self.hyperboxDimension)]
+                niche=self.hypergrid[listNiches[n][0]]
                 
                 #IP=IP U {si}
-                s=self.random.rnd(0,len(niche))
-                self.internalPop.append(s)
+                s=self.random.rnd(0,len(niche)-1)
+                self.internalPop.append(self.externalPop[niche[s]])
                 
                 
             for j in range(0,self.ipsize,2):
-                crossoverUniform(self.internalPop[j], self.internalPop[j+1], self.random, self.Pc)
-                mutationNearestNeighbor()
+                xsite,self.internalPop[j].chrom,self.internalPop[j+1].chrom=crossoverUniform(self.internalPop[j].chrom, self.internalPop[j+1].chrom, self.random, self.Pc)
+                self.internalPop[j].xsite=xsite
+                self.internalPop[j+1].xsite=xsite
+                self.internalPop[j].chrom=mutationNearestNeighbor(self.random,self.Pm,self.internalPop[j].chrom,self.graph,self.L)
+                self.internalPop[j+1].chrom=mutationNearestNeighbor(self.random,self.Pm,self.internalPop[j+1].chrom,self.graph,self.L)
+                self.internalPop[j].x=decode(self.internalPop[j].chrom)
+                self.internalPop[j+1].x=decode(self.internalPop[j+1].chrom)
                 
             for j in range(self.ipsize):
                 self.internalPop[j].fitness=objectiveFunction(self.internalPop[j],self.graph) 
-                self.updateExternalPopulation(self.internalPop[j])
-            self.internalPop=[]
+                self.updateExternalPopulation(self.internalPop[j],self.externalPop)
+            print "Gen[%s] %s" % (i,self.niches)
+            for e in self.externalPop:
+                print e.x
+                print e.fitness
+                print e.chrom.alleles
+            
             
 class HyperGrid(object):
     """ This represents a hypergrid used in region based niching"""        
@@ -517,11 +556,13 @@ class HyperGrid(object):
     def __init__(self, dimension):
         """ Constructor """  
         self.dimension=dimension
-        self.grid = [[[]]*dimension] * dimension 
+        self.grid = [[None for i in range(self.dimension)] for i in range(self.dimension)]
         self.max=None
         self.min=None
         
     def __getitem__(self,key):
+        if isinstance(key,int):
+            key=(int(key/self.dimension),key % self.dimension)
         return self.grid[key[0]][key[1]]
         
     def __setitem__(self, key, item): 
@@ -535,12 +576,13 @@ class HyperGrid(object):
         """
         if not isinstance(key,tuple):
             raise Exception('key must be a tuple')
+        if self.grid[key[0]][key[1]]==None: self.grid[key[0]][key[1]]=[]
         self.grid[key[0]][key[1]].append(item)
-        self.max =self.grid[key[0]][key[1]] if self.max==None or len(self.grid[key[0]][key[1]]) > len(self.grid[self.max[0]][self.max[1]]) else self.grid[self.max[0]][self.max[1]]
-        self.min =self.grid[key[0]][key[1]] if self.min==None or len(self.grid[key[0]][key[1]]) > len(self.grid[self.min[0]][self.min[1]]) else self.grid[self.min[0]][self.min[1]]
+        self.max =key if self.max==None or len(self.grid[key[0]][key[1]]) > len(self.grid[self.max[0]][self.max[1]]) else self.max
+        self.min =key if self.min==None or len(self.grid[key[0]][key[1]]) < len(self.grid[self.min[0]][self.min[1]]) else self.min
          
     def clear(self):
-        self.grid = [[[]]*self.dimension] * self.dimension 
+        self.grid = [[None for i in range(self.dimension)] for i in range(self.dimension)]
         self.max=None
         self.min=None
             
@@ -614,4 +656,4 @@ class Vertex(object):
     def __str__(self):
         s = "Vertex%s" % (self.value.__str__())
         return s
-        
+       

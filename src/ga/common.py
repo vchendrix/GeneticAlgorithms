@@ -97,7 +97,6 @@ class Chromosome(object):
     An artificial chromosome 
     '''
 
-
     def __init__(self):
         ''' Constructor 
             
@@ -154,7 +153,6 @@ class Individual(object):
     x -- Phenotype - unsigned integer
     xsite -- Crossover site
 
-    
     '''
     
     def __init__(self, chrom, max=0, x=None, fitness=0, parent1=0, parent2=0, xsite=(0,0), **kwargs):
@@ -171,7 +169,7 @@ class Individual(object):
         
     
     def __str__(self):
-        return "(%d,%d)\t%s\t%s\t%d\t%.15f" % (self.parent1, self.parent2, self.xsite, self.chrom, self.x, self.fitness)
+        return "(%d,%d)\t%s\t%s\t%s\t%s" % (self.parent1, self.parent2, self.xsite, self.chrom, self.x, self.fitness)
  
 class GeneticAlgorithm(object):
     ''' 
