@@ -369,10 +369,10 @@ class Mock(object):
         Multiobjective Clustering with K-determiniation
     """   
     
-    L=10
+    L=20
     GEN=200
     EPSIZE=100
-    Pc=.79
+    Pc=.7
     
     def __init__(self,V,random):
         """
@@ -411,7 +411,7 @@ class Mock(object):
         self.maxConnectivity=None
         self.minConnectivity=None
         self.graph=V
-        self.ipsize=max(100,int(len(V)/20))
+        self.ipsize=max(200,int(len(V)/20))
         self.internalPop,self.externalPop=self.initialize(V,random,self.ipsize)
         
         
@@ -485,23 +485,29 @@ class Mock(object):
     
     def updateExternalPopulation(self,individual,externalPop):
         """ Updates externalPop with the solution, if it dominates """
-        for i in externalPop:
-            pareto=self.getSolutionParetoRelationship(individual, i) 
+        lEP=len(externalPop)
+        dominatedIndiv=[]
+        for i in range(lEP):
+            pareto=self.getSolutionParetoRelationship(individual, externalPop[i]) 
             if(pareto >= Pareto.NONDOMINATED):
                 if pareto == Pareto.DOMINATES:
-                    externalPop.remove(i)
+                    dominatedIndiv.append(i)
             else: 
                 return # solution is dominated 
         
+
         self.updateNicheUnit(individual)
         externalPopFull=len(self.externalPop) >= self.EPSIZE
         if not externalPopFull:
             externalPop.append(individual)
         elif externalPopFull and self.maxNiche!=None:
-            i=self.random.rnd(0,len(self.hypergrid[self.maxNiche]))
-            s=externalPop[self.hypergrid[self.maxNiche]]
-            externalPop.remove(s)
             externalPop.append(individual)
+            i=self.random.rnd(0,len(self.hypergrid[self.maxNiche]))
+            niche=externalPop[self.hypergrid[self.maxNiche]]
+            dominatedIndiv.append(niche[i])
+        
+        for i in dominatedIndiv:
+            externalPop.pop(i)
         
         # update niche counts
         self.hypergrid.clear()
@@ -545,10 +551,7 @@ class Mock(object):
                 self.updateExternalPopulation(self.internalPop[j],self.externalPop)
             print "Gen[%s] %s" % (i,self.niches)
             for e in self.externalPop:
-                print e.x
-                print e.fitness
-                print e.chrom.alleles
-            
+                print "k[%s] %s," %(e.x['k'],e.fitness)
             
 class HyperGrid(object):
     """ This represents a hypergrid used in region based niching"""        
