@@ -14,22 +14,30 @@ Vertex - define a vertex in a graph
 
 Functions
 
-clusterConnectivity - determines the cluster deviation of a solution (chromosome) based on
-    its decoded value which is the number of clusters and the cluster assignments
-clusterDeviation - determines the cluster deviation of a solution (chromosome) based on
-    its decoded value which is the number of clusters and the cluster assignments
-createIrisGraph - this is a specific function that creates a Graph (adjacency list) for the Iris dataset 
-    from the UCI Machine Learning dataset
-createLocusBasedAdjacencyList - takes a graph (adjacency list) and returnes it representation
-    in locus based adjacency form
+clusterConnectivity - determines the cluster deviation of a solution 
+    (chromosome) based on its decoded value which is the number of 
+    clusters and the cluster assignments
+clusterDeviation - determines the cluster deviation of a solution 
+    (chromosome) based on its decoded value which is the number of 
+    clusters and the cluster assignments
+cosineSimilarity - returns the minimized cosine similarity for two vectors
+createIrisGraph - this is a specific function that creates a Graph 
+    (adjacency list) for the Iris dataset from the UCI Machine Learning dataset
+createLocusBasedAdjacencyList - takes a graph (adjacency list) 
+    and returnes it representation in locus based adjacency form
 crossoverUniform - performes uniform crossover between two mates
 decode - decodes the Mock algorithms Chromosome which is a graph  using
     a locus based adjacency representation and stored as a python list
 euclideanDistance - returns the euclidean distance between two n-tuples
-mutationNearsetNeighbor -
-objectiveFunction - the multi-objective function returns a dictionary containing the
-    deviation and connectivity objectives
-primsAlgorithm - returns the minimum spanning tree of the given graph (adjacency list)
+getNiche - returns the niche for a given individuals fitness
+getSolutionParetoRelationship - return the first solutions relationship to the
+    second solution. It is either DOMINATED, NONDOMINATED or DOMINATES
+mutationNearsetNeighbor - mutates the alleles with a restriction on the 
+    L nearest neighbors.
+objectiveFunction - the multi-objective function returns a dictionary 
+    containing the deviation and connectivity objectives
+primsAlgorithm - returns the minimum spanning tree of the given graph 
+    t(adjacency list)
 
 @author: val
 '''
@@ -42,7 +50,10 @@ import copy
 import heapq
 import math
 import networkx as nx
+import numpy as N
 import sets
+
+from numpy import linalg as LA
 
 from ga.common import Chromosome, Individual
 
@@ -52,7 +63,7 @@ from ga.common import Chromosome, Individual
 # Functions
 #############
 
-def clusterConnectivity(kassign,graph):
+def clusterConnectivity(kassign,graph,L):
     """ Calculates the cluster connectivity by evaluating
         the degree to which neighboring data-points have 
         been placed in the same cluster. The smaller the
@@ -72,7 +83,7 @@ def clusterConnectivity(kassign,graph):
     """
     connectivity=0
     for v in graph:
-        l = 20 if len(v.edges)>20 else len(v.edges)
+        l = L if len(v.edges)>20 else len(v.edges)
         for i in range(l):
             c1=kassign[v.id]
             c2=kassign[v.edges[i].mate(v).id]
@@ -111,25 +122,40 @@ def clusterDeviation(k,kassign,graph):
     kN=[0]*k
     for i in range(len(graph)):
         v=graph[i]
-        k=kassign[i]
-        kN[k]+=1
-        if kMeans[k]==[]: kMeans[k]=list(v.value)
+        l=kassign[i]
+        kN[l]+=1
+        if kMeans[l]==[]: kMeans[l]=list(v.value)
         else:
             for j in range(len(v.value)):
-                kMeans[k][j]+=v.value[j]
+                kMeans[l][j]+=v.value[j]
+    #print k
+    #print kMeans
+    #print kN
         
     # divided all the summed n-tuples from the vertices
     # by the number of data items in the cluster
     for i in range(k):
         for j in range(len(kMeans[i])):
-            kMeans[k][j]=kMeans[k][j]/ kN[i]
+            kMeans[i][j]=kMeans[i][j]/ kN[i]
+    #print kMeans
+    #print kN
             
     deviation=0
+    #print kassign
     for i in range(len(graph)):
         v=graph[i]
-        k=kassign[i]
-        deviation+=euclideanDistance(kMeans[k],v.value) 
+        l=kassign[i]
+        #print "[%d] %5f+=cosineSimilarity(%s,%s)" %(l,deviation,kMeans[l],v.value)
+        deviation+=cosineSimilarity(kMeans[l],v.value) 
+    #print "*******"
     return deviation
+
+def cosineSimilarity(a,b):
+    """ Determines the cosine similarity between two points.
+        a and b are arrays 
+    """
+    return 1-(N.dot(a,b)/(LA.norm(a)*LA.norm(b)))
+    
 
 def createIrisGraph(filename):
     """ Create a fully connected graph using the data file 
@@ -199,7 +225,7 @@ def createLocusBasedAdjacencyList(V,E):
             alleles[i]=V[i].edges[0].mate(V[i]).id
     return alleles
 
-def crossoverUniform(parent1,parent2,random,pcross=.7):
+def crossoverUniform(parent1,parent2,random,pcross,pmutation,G,L):
     """
         Uniform Crossover
         
@@ -216,16 +242,17 @@ def crossoverUniform(parent1,parent2,random,pcross=.7):
         for i in range(len(parent1)):
             if(random.flip(.5)):
                 xsite+="1"
-                child1[i]=parent2[i]
-                child2[i]=parent1[i]
+                child1[i]=mutationNearestNeighbor(random,pmutation,i,parent2[i],G,L)
+                child2[i]=mutationNearestNeighbor(random,pmutation,i,parent1[i],G,L )
             else:
                 xsite+="0"
-                child1[i]=parent1[i]
-                child2[i]=parent2[i]
+                child1[i]=mutationNearestNeighbor(random,pmutation,i,parent1[i],G,L)
+                child2[i]=mutationNearestNeighbor(random,pmutation,i,parent2[i],G,L )
     else:
         xsite='0'*len(parent1)
-        child1.alleles=copy.copy(parent1.alleles)
-        child2.alleles=copy.copy(parent2.alleles)
+        for i in range(len(parent1)):
+                child1[i]=mutationNearestNeighbor(random,pmutation,i,parent1[i],G,L)
+                child2[i]=mutationNearestNeighbor(random,pmutation,i,parent2[i],G,L )
     return xsite,child1,child2
             
 
@@ -264,30 +291,46 @@ def decode(chrom):
 
 def euclideanDistance(x,y):
     """ Finds the euclidean distance between two n-tuples """
-    d = 0
-    for i in range(len(x)):
-        d += (x[i] - y[i]) ** 2
-    d = math.sqrt(d)
-    return d 
+    z=range(len(x))
+    for i in range(len(z)):
+        z[i]=x[i]-y[i]
+    return LA.norm(z) 
             
-def mutationNearestNeighbor(random,pm,chrom,G,L):
+def getNiche(individual,dimension,nicheUnit):
+    """ determines the current niche for the given individual 
+        Returns a tuple (connectivity, deviation)
+    """
+    #print individual.fitness 
+    d=dimension-1 if individual.fitness['deviation']==1 else (individual.fitness['deviation']/nicheUnit)
+    c=dimension-1 if individual.fitness['connectivity']==1 else (individual.fitness['connectivity']/nicheUnit)
+    return (int(c),int(d))
+         
+def getSolutionParetoRelationship(s1,s2):
+    """ return s1's relatinship to s2 """
+    dev=s1.fitness['deviation'] < s2.fitness['deviation']  
+    conn=s1.fitness['connectivity'] < s2.fitness['connectivity']
+    if dev and conn: return Pareto.DOMINATES
+
+    dev=s1.fitness['deviation'] <= s2.fitness['deviation']  
+    conn=s1.fitness['connectivity'] <= s2.fitness['connectivity']
+    if dev or conn: return Pareto.NONDOMINATED
+    else: return Pareto.DOMINATED
+    
+def mutationNearestNeighbor(random,pm,i,allele,G,L):
     """
         This is call mutation on the restricted nearest neighbors.
         It mutates a chromosome based on the L nearest neighbors
         supplied in the given graph G.
         
     """
-    lchrom=len(chrom)
-    for c in range(lchrom):
-        ledges=len(G[c].edges)
-        Lnn=L if ledges > L else ledges 
-        if random.flip(pm): # mutation with the probabilit pm
-            i=random.rnd(0,Lnn-1)
-            chrom[c]=G[c].edges[i].mate(G[c]).id
-    return chrom
+    ledges=len(G[i].edges)
+    Lnn=L if ledges > L else ledges 
+    if random.flip(pm): # mutation with the probabilit pm
+        j=random.rnd(0,Lnn-1)
+        return G[i].edges[j].mate(G[i]).id
+    return allele
 
-
-def objectiveFunction(individual, graph):
+def objectiveFunction(individual, graph,L):
     """
         The Mock objective function calculates the cluster
         Deviation and the Connectivity. The return value is a 
@@ -295,9 +338,8 @@ def objectiveFunction(individual, graph):
     """  
     
     d = clusterDeviation(individual.x['k'],individual.x['kassign'], graph)
-    c = clusterConnectivity(individual.x['kassign'],graph)
+    c = clusterConnectivity(individual.x['kassign'],graph,L)
     return dict(deviation=d,connectivity=c)
-      
 
 def primsAlgorithm(V,random=None):
     """
@@ -309,7 +351,6 @@ def primsAlgorithm(V,random=None):
         random.warmupRandom(seedValue)
         V=createIrisGraph("afile") # returns a fully connected graph
         E=primsAlgorithm(V,random) # finds the minimun spanning tree for the givien graph
-        
         
     """
     pq = []
@@ -371,7 +412,7 @@ class Mock(object):
     
     L=20
     GEN=200
-    EPSIZE=100
+    EPSIZE=1000
     Pc=.7
     
     def __init__(self,V,random):
@@ -395,7 +436,7 @@ class Mock(object):
         >>> mock = Mock(V,random)
         """
         
-        self.Pm=0.1
+        self.Pm=1/len(V)
         self.hyperGridDepth=3
         self.niches=dict()
         self.random=random
@@ -403,43 +444,16 @@ class Mock(object):
         self.internalPop=[]
         self.hyperboxDimension=(2**self.hyperGridDepth)
         self.hypergrid=HyperGrid(self.hyperboxDimension)
-        self.nicheUnit=dict(deviation=0.0,connectivity=0.0)
-        self.maxNiche=None
-        self.minNiche=None
+        self.nicheUnit=1.0/self.hyperboxDimension
         self.maxDeviation=None
         self.minDeviation=None
         self.maxConnectivity=None
         self.minConnectivity=None
         self.graph=V
-        self.ipsize=max(200,int(len(V)/20))
-        self.internalPop,self.externalPop=self.initialize(V,random,self.ipsize)
-        
-        
-    
-    def updateNicheUnit(self,individual):
-        if(self.maxConnectivity==None):
-            self.maxConnectivity=individual.fitness['connectivity']
-            self.minConnectivity=individual.fitness['connectivity']
-            self.maxDeviation=individual.fitness['deviation']
-            self.minDeviation=individual.fitness['deviation']
-        else:
-            self.maxConnectivity=max(individual.fitness['connectivity'],self.maxConnectivity)
-            self.minConnectivity=min(individual.fitness['connectivity'],self.minConnectivity)
-            self.maxDeviation=max(individual.fitness['deviation'],self.maxDeviation)
-            self.minDeviation=min(individual.fitness['deviation'],self.minDeviation)
-        self.nicheUnit['deviation']=math.ceil((self.maxDeviation-self.minDeviation+1)/self.hyperboxDimension)
-        self.nicheUnit['connectivity']=math.ceil(float(self.maxConnectivity-self.minConnectivity+1)/self.hyperboxDimension)
-        
-        
-    def getNiche(self,individual):
-        """ determines the current niche for the given individual 
-            Returns a tuple (connectivity, deviation)
-        """
-        d=(int(individual.fitness['deviation']-self.minDeviation)/(self.nicheUnit['deviation']))
-        c=(int(individual.fitness['connectivity']-self.minConnectivity)/(self.nicheUnit['connectivity']))
-        return (int(c),int(d))
-         
-         
+        self.ipsize=max(50,int(len(V)/20))
+        print "IP size:%s" % self.ipsize
+        print "nicheUnit:%s" %self.nicheUnit 
+        self.internalPop=self.initialize(V,random,self.ipsize)
     
     def initialize(self,V,random,popsize):
         """
@@ -451,7 +465,6 @@ class Mock(object):
         """
     
         internalPop=[]
-        externalPop=[]
         lenV=len(V)
         for i in range(popsize):
             E = primsAlgorithm(V,random)
@@ -462,69 +475,95 @@ class Mock(object):
             for edge in ilargest:
                 chrom[edge.v1.id]=edge.v1.id
             x=decode(chrom) # This decodes the number of clusters
-            individual = Individual(chrom,len(chrom),x,0,niche=0)
+            individual = Individual(chrom,len(chrom),x,0,niche=0,normalized=False)
             internalPop.append(individual) 
-            individual.fitness=objectiveFunction(individual,self.graph) 
-            self.updateExternalPopulation(individual,externalPop)
-        return internalPop,externalPop  
+            individual.fitness=objectiveFunction(individual,self.graph,self.L) 
+            self.updateMaxMin(individual)
+             
+        #print "maxD:%s minD:%s" %(self.maxDeviation,self.minDeviation)
+        #print "maxC:%s minC:%s" %(self.maxConnectivity,self.minConnectivity)
+        for individual in internalPop:
+            self.normalizeObjectiveFunction(individual)
+            print "k[%s] %s," %(individual.x['k'],individual.fitness)
+            self.updateExternalPopulation(individual)
+
+        print "Gen[%s,%s] %s" % (-1,len(self.externalPop),self.niches)
+        for e in self.externalPop:
+            #print "k[%s] %s," %(e.x['k'],e.fitness)
+            pass
+        return internalPop  
      
-    def normalizeObjectiveFunction(self):
-        dDenom=(self.maxDeviation-self.minDeviation)
-        cDenom=(self.maxConnectivity-self.minConnectivity)
-        for s in self.externalPop:
-            s.fitness['deviation']=(s.fitness['deviation']-self.minDeviation)/dDenom
-            s.fitness['connectivity']=(s.fitness['connectivity']-self.minConnectivity)/cDenom
+    def updateMaxMin(self,individual):
+        if(self.maxConnectivity==None):
+            self.maxConnectivity=individual.fitness['connectivity']
+            self.minConnectivity=individual.fitness['connectivity']
+            self.maxDeviation=individual.fitness['deviation']
+            self.minDeviation=individual.fitness['deviation']
+        else:
+            self.maxConnectivity=max(individual.fitness['connectivity'],self.maxConnectivity)
+            self.minConnectivity=min(individual.fitness['connectivity'],self.minConnectivity)
+            self.maxDeviation=max(individual.fitness['deviation'],self.maxDeviation)
+            self.minDeviation=min(individual.fitness['deviation'],self.minDeviation)
+        
+        
+         
+    def normalizeObjectiveFunction(self,individual):
+        if individual.normalized==False:
+            if self.maxDeviation-self.minDeviation > 0:
+                dDenom=(self.maxDeviation-self.minDeviation)
+                cDenom=(self.maxConnectivity-self.minConnectivity)
+                individual.fitness['deviation']=(individual.fitness['deviation']-self.minDeviation)/dDenom
+                individual.fitness['connectivity']=float(individual.fitness['connectivity']-self.minConnectivity)/cDenom
+            elif self.maxDeviation-self.minDeviation==0: 
+                individual.fitness['deviation']=1
+                individual.fitness['connectivity']=1
+            individual.normalized=True 
       
-    def getSolutionParetoRelationship(self,s1,s2):
-        """ return s1's relatinship to s2 """
-        dev=s1.fitness['deviation'] < s2.fitness['deviation']  
-        conn=s1.fitness['connectivity'] < s2.fitness['connectivity']
-        if dev and conn: return Pareto.DOMINATES
-        elif dev or conn: return Pareto.NONDOMINATED
-        else: return Pareto.DOMINATED
-    
-    def updateExternalPopulation(self,individual,externalPop):
+    def updateExternalPopulation(self,individual):
         """ Updates externalPop with the solution, if it dominates """
-        lEP=len(externalPop)
+        lEP=len(self.externalPop)
         dominatedIndiv=[]
         for i in range(lEP):
-            pareto=self.getSolutionParetoRelationship(individual, externalPop[i]) 
+            pareto=getSolutionParetoRelationship(individual, self.externalPop[i]) 
             if(pareto >= Pareto.NONDOMINATED):
                 if pareto == Pareto.DOMINATES:
                     dominatedIndiv.append(i)
             else: 
                 return # solution is dominated 
-        
 
-        self.updateNicheUnit(individual)
-        externalPopFull=len(self.externalPop) >= self.EPSIZE
-        if not externalPopFull:
-            externalPop.append(individual)
-        elif externalPopFull and self.maxNiche!=None:
-            externalPop.append(individual)
-            i=self.random.rnd(0,len(self.hypergrid[self.maxNiche]))
-            niche=externalPop[self.hypergrid[self.maxNiche]]
-            dominatedIndiv.append(niche[i])
-        
+        dominatedIndiv.sort(reverse=True)
         for i in dominatedIndiv:
-            externalPop.pop(i)
+            self.externalPop.pop(i)
+        self.externalPop.append(individual)
+
+        externalPopFull=len(self.externalPop) > self.EPSIZE
+        if externalPopFull and self.hypergrid.getMaxNiche()!=None:
+            maxNiche=self.hypergrid.getMaxNiche()
+            i=self.random.rnd(0,len(maxNiche)-1)
+            self.externalPop.pop(i)
+        
         
         # update niche counts
         self.hypergrid.clear()
         self.niches.clear()
-        for i in range(len(externalPop)):
-            s=externalPop[i]
-            s.niche= self.getNiche(s)
+        for i in range(len(self.externalPop)):
+            s=self.externalPop[i]
+            s.niche= getNiche(s,self.hypergrid.dimension,self.hypergrid.unit)
             self.hypergrid[s.niche]=i
             try:
                 self.niches[s.niche]+=1
             except:
                 self.niches[s.niche]=1
+
             
             
     def run(self):
         for i in range(self.GEN):
             self.internalPop=[] # reset the internal population
+            self.maxDeviation=None
+            self.minDeviation=None
+            self.maxConnectivity=None
+            self.minConnectivity=None
             for j in range(self.ipsize):
                 #select a populated niche uniformly at random from externalPop
                 listNiches=self.niches.items()
@@ -538,20 +577,38 @@ class Mock(object):
                 
                 
             for j in range(0,self.ipsize,2):
-                xsite,self.internalPop[j].chrom,self.internalPop[j+1].chrom=crossoverUniform(self.internalPop[j].chrom, self.internalPop[j+1].chrom, self.random, self.Pc)
-                self.internalPop[j].xsite=xsite
-                self.internalPop[j+1].xsite=xsite
-                self.internalPop[j].chrom=mutationNearestNeighbor(self.random,self.Pm,self.internalPop[j].chrom,self.graph,self.L)
-                self.internalPop[j+1].chrom=mutationNearestNeighbor(self.random,self.Pm,self.internalPop[j+1].chrom,self.graph,self.L)
-                self.internalPop[j].x=decode(self.internalPop[j].chrom)
-                self.internalPop[j+1].x=decode(self.internalPop[j+1].chrom)
+                parent1=self.internalPop[j]
+                parent2=self.internalPop[j+1]
+                xsite,chrom1,chrom2=crossoverUniform(parent1.chrom,
+                        parent2.chrom, self.random,
+                        self.Pc,self.Pm,self.graph,self.L)
+                x=decode(chrom1)
+                child1 = Individual(chrom1,len(chrom1),x,0,niche=0,normalized=False)
+                child1.xsite=xsite
+                child1.fitness=objectiveFunction(child1,self.graph,self.L) 
+                self.updateMaxMin(child1)
+
+                x=decode(chrom2)
+                child2 = Individual(chrom2,len(chrom2),x,0,niche=0,normalized=False)
+                child2.xsite=xsite
+                child2.fitness=objectiveFunction(child2,self.graph,self.L) 
+                self.updateMaxMin(child2)
+
+                self.internalPop[j]=child1
+                self.internalPop[j+1]=child2
+
                 
+            #print "maxD:%s minD:%s" %(self.maxDeviation,self.minDeviation)
+            #print "maxC:%s minC:%s" %(self.maxConnectivity,self.minConnectivity)
             for j in range(self.ipsize):
-                self.internalPop[j].fitness=objectiveFunction(self.internalPop[j],self.graph) 
-                self.updateExternalPopulation(self.internalPop[j],self.externalPop)
-            print "Gen[%s] %s" % (i,self.niches)
-            for e in self.externalPop:
-                print "k[%s] %s," %(e.x['k'],e.fitness)
+                indiv=self.internalPop[j]
+                self.normalizeObjectiveFunction(indiv)
+                self.updateExternalPopulation(indiv)
+
+        print "Gen[%s,%s] %s" % (i,len(self.externalPop),self.niches)
+        for e in self.externalPop:
+            print "k[%s] %s," %(e.x['k'],e.fitness)
+            pass
             
 class HyperGrid(object):
     """ This represents a hypergrid used in region based niching"""        
@@ -559,6 +616,7 @@ class HyperGrid(object):
     def __init__(self, dimension):
         """ Constructor """  
         self.dimension=dimension
+        self.unit=1.0/dimension # float division
         self.grid = [[None for i in range(self.dimension)] for i in range(self.dimension)]
         self.max=None
         self.min=None
@@ -583,6 +641,9 @@ class HyperGrid(object):
         self.grid[key[0]][key[1]].append(item)
         self.max =key if self.max==None or len(self.grid[key[0]][key[1]]) > len(self.grid[self.max[0]][self.max[1]]) else self.max
         self.min =key if self.min==None or len(self.grid[key[0]][key[1]]) < len(self.grid[self.min[0]][self.min[1]]) else self.min
+
+    def getMaxNiche(self):
+        return self.__getitem__(self.max)
          
     def clear(self):
         self.grid = [[None for i in range(self.dimension)] for i in range(self.dimension)]
@@ -612,7 +673,9 @@ class Edge(object):
         """
             returns the Euclidean distance between vertices
         """
-        return euclideanDistance(self.v1.value,self.v2.value)
+        if self.w==None:
+            self.w=cosineSimilarity(self.v1.value,self.v2.value)
+        return self.w
     
     def __eq__(self, other):
         if other==None: return False

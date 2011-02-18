@@ -278,7 +278,7 @@ class GeneticAlgorithm(object):
         
     def statistics(self,pop):
         """ Calculates the GA stats for the latest population """
-        pop[0].fitness=self.objfunction(pop[0].x)
+        pop[0].fitness=self.objfunction(pop[0])
         self.max=pop[0].fitness
         self.min=pop[0].fitness
         self.sumfitness=pop[0].fitness
@@ -287,7 +287,7 @@ class GeneticAlgorithm(object):
         # statistics
         for i in range(1,len(pop)): 
             p=pop[i]
-            p.fitness=self.objfunction(p.x)
+            p.fitness=self.objfunction(p)
             self.sumfitness+=p.fitness
             self.max=max(self.max,p.fitness)
             self.min=min(self.min,p.fitness)
