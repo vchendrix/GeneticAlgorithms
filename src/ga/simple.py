@@ -51,11 +51,11 @@ def population(self):
         for j1 in range(self.lchrom):
             chrom[j1] = self.random.flip(0.5)
         x = self.decode(chrom)
-        fitness = (self.objfunction(x))
         parent1 = 0
         parent2 = 0
         xsite = 0
-        self.oldpop[j]=Individual(chrom, self.lchrom, x, fitness, parent1, parent2, xsite) 
+        self.oldpop[j]=Individual(chrom, self.lchrom, x, None, parent1, parent2, xsite) 
+        self.oldpop[j].fitness = self.objfunction(self.oldpop[j])
 
 class Chromosome(ga.common.Chromosome):
     ''' An artificial chromosomve '''
@@ -161,8 +161,9 @@ class SimpleGeneticAlgorithm(GeneticAlgorithm):
         '''
         return chrom.uint
     
-    def objfunction(self, x):
+    def objfunction(self, individual):
         ''' Fitness function - f(x) = x**n '''
+        x=individual.x
         n = 10
         return pow(float(x) / self.coef, n)
     
