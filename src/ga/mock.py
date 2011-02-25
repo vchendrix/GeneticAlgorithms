@@ -10,6 +10,7 @@ Classes
 Edge - defines an edge in a graph
 Hypergrid - define the hypergrid
 Mock - the MOCK genetic algorithm
+Pareto - Enumeration for Pareto relationship of solutions
 Vertex - define a vertex in a graph
 
 Functions
@@ -52,12 +53,12 @@ import math
 import networkx as nx
 import numpy as N
 import sets
+import sys
 
 from numpy import linalg as LA
 
 from ga.common import Chromosome, Individual
-
- 
+from ga.utilities import createNormalizedDataset
 
 #############
 # Functions
@@ -171,7 +172,7 @@ def createIrisGraph(filename):
         line = line.rstrip('\n ')
         if(len(line) > 0):
             line = line.rpartition(",")
-            value = tuple(float(l) for l in line[0].split(","))
+            value = [float(l) for l in line[0].split(",")]
             group = line[2]
             V.append(Vertex(group, value, i))
             i += 1
@@ -184,6 +185,24 @@ def createIrisGraph(filename):
         V[i].edges=heapq.nsmallest(len(V[i].edges),V[i].edges)
     
     return V
+
+def createNormalizedUniformlyRandomGraph(rows,columns,rand):
+    """ Create a graph with normalized data [0,1] uniformly
+        at random.
+    """
+    V=[] # vertices
+    dataSet=createNormalizedDataset(rows,columns,rand)     
+    for i in range(len(dataSet)):
+            V.append(Vertex(None,dataSet[i],i))
+
+    for i in range(len(V)):
+        for j in range(len(V)):
+            e=Edge(V[i],V[j])
+            if(e.weight() >0):
+                V[i].edges.append(e)
+        V[i].edges=heapq.nsmallest(len(V[i].edges),V[i].edges)
+    return V
+
 
 def createNxGraph(kassign,V):
     """ creates a nextwork x graph from the local adjacency based matrix """
@@ -315,6 +334,12 @@ def getSolutionParetoRelationship(s1,s2):
     conn=s1.fitness['connectivity'] <= s2.fitness['connectivity']
     if dev or conn: return Pareto.NONDOMINATED
     else: return Pareto.DOMINATED
+
+def generatUniformlyRandom(numDimension,numRows,random):
+    """ Generates a dataset uniformly at random with
+        the specified dimension and rows
+    """
+    
     
 def mutationNearestNeighbor(random,pm,i,allele,G,L):
     """
@@ -330,13 +355,32 @@ def mutationNearestNeighbor(random,pm,i,allele,G,L):
         return G[i].edges[j].mate(G[i]).id
     return allele
 
+def normalizeGraph(V):
+    """
+        Normalize the values of the vertices
+    """
+    # find the min and max values
+    mx=copy.copy(V[0].value)
+    mn=copy.copy(V[0].value)
+    for j in range(1,len(V)):
+        for i in range(len(V[j].value)):
+            m = V[j].value[i]
+            mx[i] =  max(m,mx[i])    
+            mn[i] =  min(m,mn[i])    
+    spread=N.subtract(mx,mn)
+
+    # perform the normalization of the values
+    for v in V:
+        for i in range(len(v.value)):
+            v.value[i]=(v.value[i]-mn[i])/spread[i]
+     
+
 def objectiveFunction(individual, graph,L):
     """
         The Mock objective function calculates the cluster
         Deviation and the Connectivity. The return value is a 
         dictionary with deviation and connectivity
     """  
-    
     d = clusterDeviation(individual.x['k'],individual.x['kassign'], graph)
     c = clusterConnectivity(individual.x['kassign'],graph,L)
     return dict(deviation=d,connectivity=c)
@@ -399,12 +443,88 @@ def primsAlgorithm(V,random=None):
 # Classes
 #############
 
-class Pareto:
+class Edge(object):
+    """
+        Class representing an edge in a graph
+    """
     
-    DOMINATED=0
-    NONDOMINATED=1
-    DOMINATES=2
+    def __init__(self, v1, v2):
+            
+        self.v1 = v1
+        self.v2 = v2
+        self.w = None
+        
+    def mate(self, v):
+        """
+            Returns the mate if the given vertex exists in this edge
+        """
+        if self.v1 == v: return self.v2;
+        if self.v2 == v: return self.v1;
+        return None
+   
+    def weight(self):
+        """
+            returns the cosine similarity between vertices
+        """
+        if self.w==None:
+            self.w=cosineSimilarity(self.v1.value,self.v2.value)
+        return self.w
     
+    def __eq__(self, other):
+        if other==None: return False
+        if(self.mate(other.v1)!=None and self.mate(other.v2)!=None): return True
+    
+    def __cmp__(self, other):
+        if other==None: return 1
+        if self.weight() < other.weight():return - 1
+        if self.weight() == other.weight(): return 0
+        return 1
+    
+    def __str__(self):
+        s = "Edge<%s,%s,%f>" % (self.v1.__str__(), self.v2.__str__(), self.weight())
+        return s
+            
+    
+class HyperGrid(object):
+    """ This represents a hypergrid used in region based niching"""        
+    
+    def __init__(self, dimension):
+        """ Constructor """  
+        self.dimension=dimension
+        self.unit=1.0/dimension # float division
+        self.grid = [[None for i in range(self.dimension)] for i in range(self.dimension)]
+        self.max=None
+        self.min=None
+        
+    def __getitem__(self,key):
+        if isinstance(key,int):
+            key=(int(key/self.dimension),key % self.dimension)
+        return self.grid[key[0]][key[1]]
+        
+    def __setitem__(self, key, item): 
+        """
+          Set the niche.
+          The key is a tuple (x,y)
+          The item can be anything
+            >>> key=tupe(5,2)
+            >>> item=anObject
+            >>> hypergrid[key]=item
+        """
+        if not isinstance(key,tuple):
+            raise Exception('key must be a tuple')
+        if self.grid[key[0]][key[1]]==None: self.grid[key[0]][key[1]]=[]
+        self.grid[key[0]][key[1]].append(item)
+        self.max =key if self.max==None or len(self.grid[key[0]][key[1]]) > len(self.grid[self.max[0]][self.max[1]]) else self.max
+        self.min =key if self.min==None or len(self.grid[key[0]][key[1]]) < len(self.grid[self.min[0]][self.min[1]]) else self.min
+
+    def getMaxNiche(self):
+        return self.__getitem__(self.max)
+         
+    def clear(self):
+        self.grid = [[None for i in range(self.dimension)] for i in range(self.dimension)]
+        self.max=None
+        self.min=None
+
 class Mock(object):
     """ 
         Multiobjective Clustering with K-determiniation
@@ -435,7 +555,7 @@ class Mock(object):
         >>> random.warmupRandom(seed)
         >>> mock = Mock(V,random)
         """
-        
+       
         self.Pm=1/len(V)
         self.hyperGridDepth=3
         self.niches=dict()
@@ -453,7 +573,6 @@ class Mock(object):
         self.ipsize=max(50,int(len(V)/20))
         print "IP size:%s" % self.ipsize
         print "nicheUnit:%s" %self.nicheUnit 
-        self.internalPop=self.initialize(V,random,self.ipsize)
     
     def initialize(self,V,random,popsize):
         """
@@ -484,7 +603,7 @@ class Mock(object):
         #print "maxC:%s minC:%s" %(self.maxConnectivity,self.minConnectivity)
         for individual in internalPop:
             self.normalizeObjectiveFunction(individual)
-            print "k[%s] %s," %(individual.x['k'],individual.fitness)
+            #print "k[%s] %s," %(individual.x['k'],individual.fitness)
             self.updateExternalPopulation(individual)
 
         print "Gen[%s,%s] %s" % (-1,len(self.externalPop),self.niches)
@@ -554,20 +673,82 @@ class Mock(object):
                 self.niches[s.niche]+=1
             except:
                 self.niches[s.niche]=1
-
-            
-            
+                
     def run(self):
+        solutionFront=self.mock(self.graph)
+        self.writeParetoFront('paretofront.txt')
+        controlFront=[]
+        for i in range(5):
+            V=createNormalizedUniformlyRandomGraph(len(self.graph),2,self.random)
+            controlFront.append(self.mock(V))
+            self.writeParetoFront('controlFront%s.txt' % (len(controlFront)-1))
+
+        kSF=self.maxK(solutionFront)
+        kCF=self.maxK(controlFront[0])
+        for i in range(1,5):
+            k=self.maxK(controlFront[i])
+            kCF=min(k,kCF)
+        kMax=min(kSF,kCF)
+        solutionFront=self.filterAndNormalize(solutionFront,kMax)
+        for i in range(5):
+            controlFront[i]=self.filterAndNormalize(controlFront[i],kMax)
+        bestSolution=-1
+        bestScore=-1
+        for s in solutionFront:
+            for cf in controlFront:
+                for c in cf: 
+                    score=euclideanDistance((s.fitness['deviation'],s.fitness['connectivity']),(c.fitness['deviation'],c.fitness['connectivity']))
+                    bestScore=max(bestScore,score)
+                    if bestScore==score: bestSolution=s
+            print bestScore
+            print bestSolution
+
+        print bestSolution
+        return bestSolution
+
+
+    def maxK(self,solutionSet):
+        """ returns the largest k encountered in the solution set"""
+        maxK=0
+        for s in solutionSet:
+            maxK=max(s.x['k'],maxK)
+
+    def filterAndNormalize(self,solutionSet,maxK,minK=0,sqrt=True):
+        self.maxDeviation=None
+        self.minDeviation=None
+        self.maxConnectivity=None
+        self.minConnectivity=None
+        for s in solutionSet:
+            if s.x['k'] <= maxK and s.x['k'] >=minK:
+                solutionSet.remove(s)
+            else:
+                self.updateMaxMin(s)
+        for s in solutionSet:
+            self.normalizeObjectiveFunction(s)
+            if sqrt:
+                s.fitness['deviation']=math.sqrt(s.fitness['deviation'])
+                s.fitness['connectivity']=math.sqrt(s.fitness['connectivity'])
+        
+        return solutionSet
+
+    def mock(self,graph):
+        self.externalPop=[]
+        self.niches=dict()
+        self.hypergrid=HyperGrid(self.hyperboxDimension)
+        self.internalPop=self.initialize(graph,self.random,self.ipsize)
         for i in range(self.GEN):
+            # Reset member variables
             self.internalPop=[] # reset the internal population
             self.maxDeviation=None
             self.minDeviation=None
             self.maxConnectivity=None
             self.minConnectivity=None
+
             for j in range(self.ipsize):
                 #select a populated niche uniformly at random from externalPop
                 listNiches=self.niches.items()
                 n=self.random.rnd(0,len(listNiches)-1)
+
                 #select a solution uniformly at random from niche
                 niche=self.hypergrid[listNiches[n][0]]
                 
@@ -575,7 +756,7 @@ class Mock(object):
                 s=self.random.rnd(0,len(niche)-1)
                 self.internalPop.append(self.externalPop[niche[s]])
                 
-                
+            # mate the selected parents
             for j in range(0,self.ipsize,2):
                 parent1=self.internalPop[j]
                 parent2=self.internalPop[j+1]
@@ -596,102 +777,31 @@ class Mock(object):
 
                 self.internalPop[j]=child1
                 self.internalPop[j+1]=child2
-
                 
-            #print "maxD:%s minD:%s" %(self.maxDeviation,self.minDeviation)
-            #print "maxC:%s minC:%s" %(self.maxConnectivity,self.minConnectivity)
             for j in range(self.ipsize):
                 indiv=self.internalPop[j]
                 self.normalizeObjectiveFunction(indiv)
                 self.updateExternalPopulation(indiv)
 
-        print "Gen[%s,%s] %s" % (i,len(self.externalPop),self.niches)
+        print "Gen[%s,%s] %s" % (self.GEN,len(self.externalPop),self.niches)
         for e in self.externalPop:
-            print "k[%s] %s," %(e.x['k'],e.fitness)
+            #print "k[%s] %s," %(e.x['k'],e.fitness)
             pass
-            
-class HyperGrid(object):
-    """ This represents a hypergrid used in region based niching"""        
-    
-    def __init__(self, dimension):
-        """ Constructor """  
-        self.dimension=dimension
-        self.unit=1.0/dimension # float division
-        self.grid = [[None for i in range(self.dimension)] for i in range(self.dimension)]
-        self.max=None
-        self.min=None
-        
-    def __getitem__(self,key):
-        if isinstance(key,int):
-            key=(int(key/self.dimension),key % self.dimension)
-        return self.grid[key[0]][key[1]]
-        
-    def __setitem__(self, key, item): 
-        """
-          Set the niche.
-          The key is a tuple (x,y)
-          The item can be anything
-            >>> key=tupe(5,2)
-            >>> item=anObject
-            >>> hypergrid[key]=item
-        """
-        if not isinstance(key,tuple):
-            raise Exception('key must be a tuple')
-        if self.grid[key[0]][key[1]]==None: self.grid[key[0]][key[1]]=[]
-        self.grid[key[0]][key[1]].append(item)
-        self.max =key if self.max==None or len(self.grid[key[0]][key[1]]) > len(self.grid[self.max[0]][self.max[1]]) else self.max
-        self.min =key if self.min==None or len(self.grid[key[0]][key[1]]) < len(self.grid[self.min[0]][self.min[1]]) else self.min
+        return copy.copy(self.externalPop)
 
-    def getMaxNiche(self):
-        return self.__getitem__(self.max)
-         
-    def clear(self):
-        self.grid = [[None for i in range(self.dimension)] for i in range(self.dimension)]
-        self.max=None
-        self.min=None
-            
-class Edge(object):
-    """
-        Class representing an edge in a graph
-    """
-    
-    def __init__(self, v1, v2):
-            
-        self.v1 = v1
-        self.v2 = v2
-        self.w = None
-        
-    def mate(self, v):
-        """
-            Returns the mate if the given vertex exists in this edge
-        """
-        if self.v1 == v: return self.v2;
-        if self.v2 == v: return self.v1;
-        return None
-   
-    def weight(self):
-        """
-            returns the Euclidean distance between vertices
-        """
-        if self.w==None:
-            self.w=cosineSimilarity(self.v1.value,self.v2.value)
-        return self.w
-    
-    def __eq__(self, other):
-        if other==None: return False
-        if(self.mate(other.v1)!=None and self.mate(other.v2)!=None): return True
-    
-    def __cmp__(self, other):
-        if other==None: return 1
-        if self.weight() < other.weight():return - 1
-        if self.weight() == other.weight(): return 0
-        return 1
-    
-    def __str__(self):
-        s = "Edge<%s,%s,%f>" % (self.v1.__str__(), self.v2.__str__(), self.weight())
-        return s
-            
 
+    def writeParetoFront(self,filename):
+        """ Write the current pareto front to a text file """
+        f=open(filename,'w')
+        for e in self.externalPop:
+            f.write("%s:%s:%s:%s\n" %(e.x['k'],e.fitness['deviation'],
+                e.fitness['connectivity'],e.x['kassign']))
+
+class Pareto:
+    """ Enumeration for Pareto Relationships """
+    DOMINATED=0
+    NONDOMINATED=1
+    DOMINATES=2
 
 class Vertex(object):
     '''

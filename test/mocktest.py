@@ -95,11 +95,26 @@ class Test(unittest.TestCase):
         c=cosineSimilarity(x,y)
         self.assertAlmostEqual(c,0,0,"Cosine Similarity is incorrect was %s should be %s" %(c,1)) 
     
+    def testCreateNormalizedUniformlyRandomGraph(self):
+
+        rand = Random()
+        rand.warmupRandom(.679838975498345)
+        V=createNormalizedUniformlyRandomGraph(40,2,rand)
+        values=(len(V),40)
+        self.assertEqual(values[0],values[1],"Had %s rows should have been %s" %values)
+        
+    
     def testEuclidean(self):
         x=[1,2]
         y=[1,3]
         d=euclideanDistance(x,y)
         self.assertEqual(d,1,"Euclidean Distance is incorrect was %s should be %s" %(d,1)) 
+
+    def testNormalizeGraph(self):
+        normalizeGraph(self.V)
+        for v in self.V:
+            for i in range(len(v.value)):
+                self.assertLessEqual(v.value[i],1,"Value %s ! <= 1" % v.value[i])
 
     def testPareto(self):
         indiv1 = mock.Mock()
@@ -143,17 +158,25 @@ class Test(unittest.TestCase):
         
         Enew = primsAlgorithm(V,self.random)
         self.assertEqual(len(Enew), len(V)-1, "Incorrect Number of edges")
+
         
     def testMock(self):
         V=createIrisGraph("./bezdekIris.data")
         
         m = Mock(V,self.random)
-        self.assertEqual(max(50,int(len(V)/20)), len(m.internalPop), "Mock internal pop is not 50 or 1/N")
         
         m.run()
+
+    def testMockSolutionFront(self):
+        V=createIrisGraph("./bezdekIris.short")
+        
+        m = Mock(V,self.random)
+        
+        m.mock(V)
+        self.assertEqual(max(50,int(len(V)/20)), len(m.internalPop), "Mock internal pop is not 50 or 1/N")
         
 
 if __name__ == "__main__":
     import sys
-    #sys.argv = ['Test.testClusterConnectivity','Test.testClusterDeviation','Test.testCosine']
+    sys.argv = ['','Test.testMock']
     unittest.main()

@@ -31,7 +31,7 @@ import array
 import itertools
 import math
 
-def createGraph(n,rand):
+def createGraph(n,rand,upper=200):
     """ create an undirected graph 
         n is the number of vertices
         rand is the seeded random number generator
@@ -40,22 +40,34 @@ def createGraph(n,rand):
         rand.warmupRandom(.2342987345987345)
         graph = createGraph(5,rand)
     """    
-        
-    graph=[0]*n
+    graph=[0]*n if upper >1 else [0.0]*n
     for i in range(n):
-        graph[i]=[0]*n
+        graph[i]=[0]*n if upper >1 else [0.0]*n
             
     for i in range(n):
         for j in range(i,n):
             if i !=j:
-                r=rand.rnd(0, 200)
+                if(upper<=1):
+                    r=rand.random()
+                else: r=rand.rnd(0, upper)
                 graph[i][j]=r
                 graph[j][i]=r
                 
-        print graph[i]
+        #print graph[i]
          
     return graph
+
+def createNormalizedDataset(rows,cols,rand):
+    """ return a matrix representing a random normalize Dataset """
+    dataSet=[] 
+    for i in range(rows):
+        dataSet.append([])
+        for j in range(cols):
+            r=rand.random()
+            dataSet[i].append(r)
     
+    return dataSet
+
 def maxmin(graph):
     """ find the maximun and minimum hamiltonian circuit for 
         a fully connected graph
@@ -129,7 +141,7 @@ class Random(object):
         self.jrand=0
         
     def random(self):
-        ''' Fetch a single random number between 0.0 and 0.1 - Subtractive Method
+        ''' Fetch a single random number between 0.0 and 1.0 - Subtractive Method
             See Knuth, D. (1969), v. 2 for details.
             
             Returns a floating point psuedorandom number between zero and one 
