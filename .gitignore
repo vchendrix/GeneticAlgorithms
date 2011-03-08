@@ -4,3 +4,6 @@
 .pydevproject
 src/build
 src/dist
+results/mock
+results/simple
+results/tsp*

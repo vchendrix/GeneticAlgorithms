@@ -8,21 +8,21 @@ import math
 import unittest
 import sys
 import time
-sys.path.insert(0, './src')
+sys.path.insert(0, '../results')
 sys.path.insert(0, '../src')
 import ga
 from ga import tsp
-from ga.utilities import Random,maxmin,createGraph
+from ga.utilities import *
 from ga.tsp import TSPGeneticAlgorithm
+import graphTSPResults as gmt
 
 
         
         
 class TestTSPGeneticAlgorithm(unittest.TestCase):
     
-            
-        
     
+    @profile
     def testDefault(self):
 
         """
@@ -39,24 +39,41 @@ class TestTSPGeneticAlgorithm(unittest.TestCase):
             rand = Random()
             rand.warmupRandom(.2342987345987345)
             rounds=10
+            print "Tour of %s Cities" % j
             for i in range(rounds):
                 rand.warmupRandom(rand.random())
                 graph = createGraph(j,rand)
                 tspga = TSPGeneticAlgorithm(rand, graph, 500, 30, 0.6, 0.033);
                 #ga.common.initReport(tspga)
-                tspga.run()
+                resultsDir=createResultsDir('tsp_%s' % j)
+                tspga.run(outputDir=resultsDir)
+                gmt.main([resultsDir,j])
                 max,min = maxmin(graph)
-                print "algorithm: %d, actual: %d" % (tspga.minx,min)
+                print "(%d)algorithm: %d, actual: %d" % (i,tspga.minx,min)
         
                 win+=1 if min==tspga.minx else 0
             
             print "accuracy:%d/%d" % (win,rounds)
             self.assertGreater(float(win)/float(rounds), .89, "accuracy not good enough")
         
+    @profile
+    def testBigTours(self):
+        for j in range(15,20):
+            rand = Random()
+            rand.warmupRandom(.2342987345987345)
+            rounds=10
+            print "Tour of %s Cities" % j
+            for i in range(rounds):
+                rand.warmupRandom(rand.random())
+                graph = createGraph(j,rand)
+                tspga = TSPGeneticAlgorithm(rand, graph, 100, 100, 0.6, 0.033);
+                resultsDir=createResultsDir('tsp_%s' % j)
+                tspga.run(outputDir=resultsDir)
+                gmt.main([resultsDir,j])
         
         
 
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
+    import sys;sys.argv = ['', 'TestTSPGeneticAlgorithm.testBigTours']
     unittest.main()

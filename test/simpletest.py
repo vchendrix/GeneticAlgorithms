@@ -4,6 +4,7 @@ Created on Jan 13, 2011
 @author: val
 '''
 import copy
+import graphSimpleResults as gsr
 import math
 import unittest
 import sys
@@ -12,7 +13,7 @@ sys.path.insert(0, './src')
 sys.path.insert(0, '../src')
 import ga
 from ga import simple
-from ga.utilities import Random
+from ga.utilities import *
 from ga.simple import SimpleGeneticAlgorithm
 
 
@@ -22,15 +23,16 @@ class TestSimpleGeneticAlgorithm(unittest.TestCase):
     
             
         
-    
+    @profile 
     def testDefault(self):
 
         rand = Random()
-        rand.warmupRandom(.2342987345987345)
-        
-        sga = SimpleGeneticAlgorithm(rand);
+        rand.warmupRandom(.6598734598745938)
+        resultsDir=createResultsDir('simple') 
+        sga = SimpleGeneticAlgorithm(rand,popsize=30, lchrom=30);
         ga.common.initReport(sga)
-        sga.run(verbose=True)
+        sga.run(silent=False,outputDir=resultsDir)
+        gsr.main([resultsDir])
         
         
 

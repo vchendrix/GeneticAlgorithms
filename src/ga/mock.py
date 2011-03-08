@@ -50,7 +50,6 @@ __url__ = 'https://github.com/valreee/GeneticAlgorithms'
 import copy
 import heapq
 import math
-import networkx as nx
 import numpy as N
 import sets
 import sys
@@ -283,6 +282,7 @@ def decode(chrom):
     assignments is the list of cluster assignments 
     
     """
+    minKSize=sys.float_info.max
     cc=0
     clusterAssignment=[None]*len(chrom)
     previous=[None]*len(chrom)
@@ -304,9 +304,10 @@ def decode(chrom):
                     clusterAssignment[previous[ctr]]=clusterAssignment[neighbor]
                     ctr-=1
             else:
+                minKSize= min(ctr,minKSize)
                 cc+=1
     # print "k:%d, kassgin:%s" %(cc+1,clusterAssignment)
-    return dict(k=cc,kassign=clusterAssignment)                 
+    return dict(k=cc,minksize=minKSize,kassign=clusterAssignment)                 
 
 def euclideanDistance(x,y):
     """ Finds the euclidean distance between two n-tuples """
@@ -326,6 +327,9 @@ def getNiche(individual,dimension,nicheUnit):
          
 def getSolutionParetoRelationship(s1,s2):
     """ return s1's relatinship to s2 """
+    if s1.fitness['deviation'] == float('inf'):
+        return Pareto.DOMINATED
+
     dev=s1.fitness['deviation'] < s2.fitness['deviation']  
     conn=s1.fitness['connectivity'] < s2.fitness['connectivity']
     if dev and conn: return Pareto.DOMINATES
@@ -381,8 +385,12 @@ def objectiveFunction(individual, graph,L):
         Deviation and the Connectivity. The return value is a 
         dictionary with deviation and connectivity
     """  
-    d = clusterDeviation(individual.x['k'],individual.x['kassign'], graph)
-    c = clusterConnectivity(individual.x['kassign'],graph,L)
+    if individual.x['k'] >25:
+        d=float('inf') 
+        c=float('inf')
+    else:
+        d = clusterDeviation(individual.x['k'],individual.x['kassign'], graph)
+        c = clusterConnectivity(individual.x['kassign'],graph,L)
     return dict(deviation=d,connectivity=c)
 
 def primsAlgorithm(V,random=None):
@@ -533,7 +541,7 @@ class Mock(object):
     L=20
     GEN=200
     EPSIZE=1000
-    Pc=.7
+    Pc=.85
     
     def __init__(self,V,random):
         """
@@ -556,8 +564,8 @@ class Mock(object):
         >>> mock = Mock(V,random)
         """
        
-        self.Pm=1/len(V)
-        self.hyperGridDepth=3
+        self.Pm=5/len(V)
+        self.hyperGridDepth=4
         self.niches=dict()
         self.random=random
         self.externalPop=[]
@@ -590,7 +598,7 @@ class Mock(object):
             chrom= Chromosome()
             chrom.alleles=createLocusBasedAdjacencyList(V,E)
             # remove i-1 longest links
-            ilargest=heapq.nlargest(i%lenV, E)
+            ilargest=heapq.nlargest(i%25, E)
             for edge in ilargest:
                 chrom[edge.v1.id]=edge.v1.id
             x=decode(chrom) # This decodes the number of clusters
@@ -613,6 +621,7 @@ class Mock(object):
         return internalPop  
      
     def updateMaxMin(self,individual):
+        if individual.fitness['deviation']==float('inf'): return
         if(self.maxConnectivity==None):
             self.maxConnectivity=individual.fitness['connectivity']
             self.minConnectivity=individual.fitness['connectivity']
@@ -627,6 +636,7 @@ class Mock(object):
         
          
     def normalizeObjectiveFunction(self,individual):
+        if individual.fitness['deviation']==float('inf'): return
         if individual.normalized==False:
             if self.maxDeviation-self.minDeviation > 0:
                 dDenom=(self.maxDeviation-self.minDeviation)
@@ -674,14 +684,18 @@ class Mock(object):
             except:
                 self.niches[s.niche]=1
                 
-    def run(self):
+    def run(self,outputDir='.'):
         solutionFront=self.mock(self.graph)
-        self.writeParetoFront('paretofront.txt')
+        self.writeParetoFront('%s/paretofront.txt' % outputDir)
+        """
+        Commenting this out until I figure out how to generate the control
+        fronts.
+
         controlFront=[]
         for i in range(5):
             V=createNormalizedUniformlyRandomGraph(len(self.graph),2,self.random)
             controlFront.append(self.mock(V))
-            self.writeParetoFront('controlFront%s.txt' % (len(controlFront)-1))
+            self.writeParetoFront('%s/controlFront%s.txt' % (outputDir,(len(controlFront)-1)))
 
         kSF=self.maxK(solutionFront)
         kCF=self.maxK(controlFront[0])
@@ -705,7 +719,7 @@ class Mock(object):
 
         print bestSolution
         return bestSolution
-
+        """
 
     def maxK(self,solutionSet):
         """ returns the largest k encountered in the solution set"""
@@ -713,7 +727,7 @@ class Mock(object):
         for s in solutionSet:
             maxK=max(s.x['k'],maxK)
 
-    def filterAndNormalize(self,solutionSet,maxK,minK=0,sqrt=True):
+    def filterAndNormalize(self,solutionSet,maxK,minK=1,sqrt=True):
         self.maxDeviation=None
         self.minDeviation=None
         self.maxConnectivity=None
@@ -782,6 +796,7 @@ class Mock(object):
                 indiv=self.internalPop[j]
                 self.normalizeObjectiveFunction(indiv)
                 self.updateExternalPopulation(indiv)
+        self.writeParetoFront('paretofront.txt')
 
         print "Gen[%s,%s] %s" % (self.GEN,len(self.externalPop),self.niches)
         for e in self.externalPop:

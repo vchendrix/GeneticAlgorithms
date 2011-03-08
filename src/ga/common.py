@@ -295,8 +295,28 @@ class GeneticAlgorithm(object):
             
         self.avg=self.sumfitness/self.popsize
         self.avgx=self.sumx/self.popsize
+
+    
+    def writeResultsHead(self,outputDir='.'):
+        f=open("%s/fitnessReport.txt" % outputDir,'w')
+        f.write("gen,max,min,sumfitness,avg,nmutation,ncross\n")
+        f.write("0,%f,%f,%f,%f,,\n" % (self.max,self.min,self.sumfitness,self.avg))
+        f.close()
+        f=open("%s/objectiveFunctionReport.txt" % outputDir,'w')
+        f.write("gen,maxx,minx,sumx,avgx,nmutation,ncross\n")
+        f.write("0,%f,%f,%f,%f,,\n" % (self.maxx,self.minx,self.sumx,self.avgx))
+        f.close()
+
         
-            
+    def writeResults(self,outputDir='.'):
+        f=open("%s/fitnessReport.txt" % outputDir,'a')
+        f.write("%d,%f,%f,%f,%f,%d,%d\n" % (self.gen+1, self.max, self.min, self.sumfitness,self.avg, self.nmutation, self.ncross))
+        f.close()
+        f=open("%s/objectiveFunctionReport.txt" % outputDir,'a')
+        f.write("%d,%f,%f,%f,%f,%d,%d\n" % (self.gen+1, self.maxx, self.minx, self.sumx,self.avgx, self.nmutation, self.ncross))
+        f.close()
+
+
     def report(self):
         if(not self.silent or self.verbose):
             if(self.verbose):
@@ -314,7 +334,7 @@ class GeneticAlgorithm(object):
             print " Generation %d & Accumulation Statistics:\t max:%.2f\t min:%.2f\tsumx:%.2f\tavg:%.2f\tnmutation:%d\tncross:%d" % (self.gen, self.maxx, self.minx, self.sumx,self.avgx, self.nmutation, self.ncross)
             print "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
         
-    def run(self,silent=True, verbose=False):
+    def run(self,silent=True, verbose=False,outputDir='.'):
         ''' runs the genetic algorithm. First you need to instantiate
             the subclassed GeneticAlgorithm and then you invoke run.
             
@@ -329,10 +349,12 @@ class GeneticAlgorithm(object):
         self.verbose=verbose
         s = self
         s.gen = 0
+        s.writeResultsHead(outputDir)
         for s.gen in range(s.maxgen):
             s.generation()
             s.statistics(s.newpop)
             s.report()
+            s.writeResults(outputDir)
             s.oldpop = copy.copy(s.newpop)
                 
       

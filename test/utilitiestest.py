@@ -3,6 +3,7 @@ Created on Feb 23, 2011
 
 @author: val
 '''
+from StringIO import StringIO
 import unittest
 import sys
 import time
@@ -14,6 +15,7 @@ from ga.utilities import *
 class TestUtilities(unittest.TestCase):
 
 
+    @profile
     def testCreateNormalizedGraph(self):
         rand = Random()
         rand.warmupRandom(.8934769875683387234)
@@ -31,8 +33,23 @@ class TestUtilities(unittest.TestCase):
         values=(len(D),40)
         self.assertEqual(values[0],values[1],"Had %s rows should have been %s" %values)
 
+    @profile
+    def testProfile(self):
+        
+        oldstdout=sys.stdout
+        sys.stdout=myout=StringIO()
+
+        @profile
+        def double(x):
+            return 2*x
+
+        d= double(155)
+        sys.stdout= sys.__stdout__
+
+        value=(myout.getvalue(),'double.start\ndouble.end\n')
+        self.assertEqual(value[0],value[1],"Got %s should have been %s" % value)
         
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'TestUtilities.testName']
+    #import sys;sys.argv = ['', 'TestUtilities.testProfile']
     unittest.main()

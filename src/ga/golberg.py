@@ -16,7 +16,9 @@ __copyright__ = "(C) 2011 Val Hendrix."
 
 import array
 import ga
-from utilities import Random
+from tsp import  TSPGeneticAlgorithm
+from simple import SimpleGeneticAlgorithm
+from utilities import *
 
 ncoins = 1000   # number of coin flips
 prob = .5     # probability of heads turning up
@@ -61,15 +63,14 @@ def simpleGeneticAlgorithm():
         Goldberg,David. (1989). Genetic Algoritms in Search, Optimization and 
         Machine Learning. Appendix C.
     """
-    from simple import SimpleGeneticAlgorithm
     
     popsize, lchrom, maxgen, pcross, pmutation, rand = ga.common.initData()
     sga = SimpleGeneticAlgorithm(rand,popsize, lchrom, maxgen, pcross, pmutation);
     ga.common.initReport(sga)
-    sga.run()
+    resultsDir=createResultsDir('simple')
+    sga.run(outputDir=resultsDir)
     
 def tspGeneticAlgorithm():
-    from tsp import  TSPGeneticAlgorithm
     
     popsize, lchrom, maxgen, pcross, pmutation, rand = ga.common.initData()
     graph = [
@@ -91,7 +92,8 @@ def tspGeneticAlgorithm():
              ]
     tspga = TSPGeneticAlgorithm(rand, graph, popsize, maxgen, pcross, pmutation);
     ga.common.initReport(tspga)
-    tspga.run(silent=False)
+    resultsDir=createResultsDir('tsp_15')
+    tspga.run(silent=False,outputDir=resultsDir)
 
 if __name__ == '__main__':
     while True:

@@ -29,7 +29,9 @@ __url__ = 'https://github.com/valreee/GeneticAlgorithms'
 
 import array
 import itertools
+import os
 import math
+from datetime import datetime
 
 def createGraph(n,rand,upper=200):
     """ create an undirected graph 
@@ -68,6 +70,15 @@ def createNormalizedDataset(rows,cols,rand):
     
     return dataSet
 
+def createResultsDir(name):
+    todayStr=datetime.today().strftime("%Y%m%d_%H_%M_%S")
+    resultsDir= "%s/%s/%s" % (os.environ['TEST_RESULTS'],name,todayStr)
+    try:
+        os.makedirs(resultsDir)
+    except os.error:
+        pass
+    return resultsDir
+        
 def maxmin(graph):
     """ find the maximun and minimum hamiltonian circuit for 
         a fully connected graph
@@ -85,6 +96,42 @@ def maxmin(graph):
     print "max distance: %d" % maxi
     print "min distance: %d" % mini
     return maxi,mini
+
+def simpleDecorator(decorator):
+        """This decorator can be used to turn simple functions
+           into well-behaved decorators, so long as the decorators
+           are fairly simple. If a decorator expects a function and
+           returns a function (no descriptors), and if it doesn't
+           modify function attributes or docstring, then it is
+           eligible to use this. Simply apply @simple_decorator to
+           your decorator and it will automatically preserve the
+           docstring and function attributes of functions to which
+           it is applied.
+        """
+        def new_decorator(f):
+            g = decorator(f)
+            g.__name__ = f.__name__
+            g.__doc__ = f.__doc__
+            g.__dict__.update(f.__dict__)
+            return g
+        # Now a few lines needed to make simple_decorator itself
+        # be a well-behaved decorator.
+        new_decorator.__name__ = decorator.__name__
+        new_decorator.__doc__ = decorator.__doc__
+        new_decorator.__dict__.update(decorator.__dict__)
+        return new_decorator
+
+@simpleDecorator
+def profile(fn):
+    """ a simple profliler that prints output
+        at the start and end of a function
+    """
+    def _profile(*args,**kwargs):
+        print "%s.start" % fn.__name__
+        afunc=fn(*args,**kwargs)
+        print "%s.end" % fn.__name__
+        return afunc
+    return _profile
 
 def swap(a,b):
     """ Swaps the values"""
