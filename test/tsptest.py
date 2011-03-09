@@ -8,13 +8,11 @@ import math
 import unittest
 import sys
 import time
-sys.path.insert(0, '../results')
 sys.path.insert(0, '../src')
 import ga
 from ga import tsp
 from ga.utilities import *
 from ga.tsp import TSPGeneticAlgorithm
-import graphTSPResults as gmt
 
 
         
@@ -47,7 +45,7 @@ class TestTSPGeneticAlgorithm(unittest.TestCase):
                 #ga.common.initReport(tspga)
                 resultsDir=createResultsDir('tsp_%s' % j)
                 tspga.run(outputDir=resultsDir)
-                gmt.main([resultsDir,j])
+                graphTSPResults(resultsDir,j)
                 max,min = maxmin(graph)
                 print "(%d)algorithm: %d, actual: %d" % (i,tspga.minx,min)
         
@@ -69,11 +67,11 @@ class TestTSPGeneticAlgorithm(unittest.TestCase):
                 tspga = TSPGeneticAlgorithm(rand, graph, 100, 100, 0.6, 0.033);
                 resultsDir=createResultsDir('tsp_%s' % j)
                 tspga.run(outputDir=resultsDir)
-                gmt.main([resultsDir,j])
+                graphTSPResults(resultsDir,j)
         
         
 
 
 if __name__ == "__main__":
-    import sys;sys.argv = ['', 'TestTSPGeneticAlgorithm.testBigTours']
+    #import sys;sys.argv = ['', 'TestTSPGeneticAlgorithm.testBigTours']
     unittest.main()

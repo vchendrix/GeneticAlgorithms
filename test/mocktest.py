@@ -7,7 +7,6 @@ import os
 import sys
 sys.path.insert(0, './src')
 sys.path.insert(0, '../src')
-import graphMockResults as gmr
 import mock
 import unittest
 from datetime import datetime
@@ -181,7 +180,7 @@ class Test(unittest.TestCase):
         todayStr=datetime.today().isoformat()
         resultsDir=createResultsDir('mock')
         m.run(outputDir=resultsDir)
-        gmr.main([resultsDir])
+        graphMockResults(resultsDir)        
 
 
 if __name__ == "__main__":

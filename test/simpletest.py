@@ -4,7 +4,6 @@ Created on Jan 13, 2011
 @author: val
 '''
 import copy
-import graphSimpleResults as gsr
 import math
 import unittest
 import sys
@@ -32,9 +31,7 @@ class TestSimpleGeneticAlgorithm(unittest.TestCase):
         sga = SimpleGeneticAlgorithm(rand,popsize=30, lchrom=30);
         ga.common.initReport(sga)
         sga.run(silent=False,outputDir=resultsDir)
-        gsr.main([resultsDir])
-        
-        
+        graphSimpleResults(resultsDir)
 
 
 if __name__ == "__main__":

@@ -29,9 +29,11 @@ __url__ = 'https://github.com/valreee/GeneticAlgorithms'
 
 import array
 import itertools
+import pylab as pl
 import os
 import math
 from datetime import datetime
+
 
 def createGraph(n,rand,upper=200):
     """ create an undirected graph 
@@ -79,6 +81,114 @@ def createResultsDir(name):
         pass
     return resultsDir
         
+def graphMockResults(resultsDir):
+     
+    f=open("%s/paretofront.txt" % resultsDir)
+    x=[[]]*6
+    y=[[]]*6
+    k=[[]]*6
+    for line in f:
+        line=line.split(':')
+        x[0].append(line[1])
+        y[0].append(line[2])
+        k[0].append(line[0])
+        if line[0] == '3':
+            kassign= [int(i) for i in list(line[3]) if i.isdigit()]
+            print "c:%s d:%s" %(line[1],line[2])
+            print kassign
+            i=0
+            failed=0
+            for ka in kassign:
+                i+=1
+                if ka==0 and i<= 50: pass
+                elif ka==1 and i >50 and i<=100: pass
+                elif ka==2 and i>100:pass
+                else:failed+=1 
+            print failed
+
+    for i in range(1,1):
+        f=open('controlFront%s.txt' % i)
+        for line in f:
+            line=line.split(':')
+            x[i].append(line[1])
+            y[i].append(line[2])
+            k[i].append(line[0])
+
+
+    pl.plot(x[0],y[0],'bo')
+    pl.xlabel('Deviation')
+    pl.ylabel('Connectivity')
+    pl.title('Pareto Front for UCI Iris Dataset')
+    #legend(('Solution Front', 'Control Front' ),'upper center', shadow=True)
+    pl.savefig("%s/paretofront.png" % resultsDir)
+
+def graphSimpleResults(resultsDir):
+    x=[]
+    y=[]
+    files=[open("%s/objectiveFunctionReport.txt" % resultsDir),
+       open("%s/fitnessReport.txt" % resultsDir)]
+    for f in files:
+        x.append([])
+        y.append([])
+        i=len(x)-1
+        for line in f:
+            line=line.split(',')
+            if line[0] != "gen":
+                x[i].append(int(line[0]))
+                y[i].append(float(line[1]))
+
+    ylen=len(y[0])
+    pl.subplot(2,1,1)
+    pl.plot(x[0],y[0],'bo')
+    pl.ylabel('Maximum x')
+    pl.title('Maximizing x**2 with SGA')
+    pl.annotate("{0:,}".format(y[0][0]),xy=(x[0][0],y[0][0]),  xycoords='data',
+             xytext=(50, 30), textcoords='offset points',
+             arrowprops=dict(arrowstyle="->") )
+    pl.annotate("{0:,}".format(y[0][ylen-1]),xy=(x[0][ylen-1],y[0][ylen-1]),  xycoords='data',
+             xytext=(-30, -30), textcoords='offset points',
+             arrowprops=dict(arrowstyle="->") )
+
+    pl.subplot(2,1,2)
+    pl.plot(x[1],y[1],'go')
+    pl.xlabel('Generation')
+    pl.ylabel('Fitness')
+    pl.savefig("%s/simple_result.png" % resultsDir)
+
+def graphTSPResults(resultsDir,numberOfTours):
+    x=[]
+    y=[]
+    files=[open("%s/objectiveFunctionReport.txt" % resultsDir),
+       open("%s/fitnessReport.txt" % resultsDir)]
+    for f in files:
+        x.append([])
+        y.append([])
+        i=len(x)-1
+        for line in f:
+            line=line.split(',')
+            if line[0] != "gen":
+                x[i].append(int(line[0]))
+                y[i].append(float(line[1] if i==1 else line[2]))
+            
+    ylen=len(y[0])
+    pl.subplot(2,1,1)
+    pl.plot(x[0],y[0],'bo')
+    pl.ylabel('Minimum Distance')
+    pl.title("TSP with a %s City Tour" % numberOfTours)
+    pl.annotate("{0:,}".format(y[0][0]),xy=(x[0][0],y[0][0]),  xycoords='data',
+             xytext=(30, -30), textcoords='offset points',
+             arrowprops=dict(arrowstyle="->") )
+    pl.annotate("{0:,}".format(y[0][ylen-1]),xy=(x[0][ylen-1],y[0][ylen-1]),  xycoords='data',
+             xytext=(-30,30), textcoords='offset points',
+             arrowprops=dict(arrowstyle="->") )
+
+    pl.subplot(2,1,2)
+    pl.plot(x[1],y[1],'go')
+    pl.xlabel('Generation')
+    pl.ylabel('Fitness')
+    pl.savefig("%s/tsp_result.png" % resultsDir)
+    pl.clf()
+
 def maxmin(graph):
     """ find the maximun and minimum hamiltonian circuit for 
         a fully connected graph
