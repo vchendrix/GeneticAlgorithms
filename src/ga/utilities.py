@@ -29,6 +29,7 @@ __url__ = 'https://github.com/valreee/GeneticAlgorithms'
 
 import array
 import itertools
+import numpy as np
 import pylab as pl
 import os
 import math
@@ -81,9 +82,10 @@ def createResultsDir(name):
         pass
     return resultsDir
         
-def graphMockResults(resultsDir):
+def graphMockResults(resultsDir,nicheUnit=0.0625):
      
     f=open("%s/paretofront.txt" % resultsDir)
+    n=1.0/nicheUnit
     x=[[]]*6
     y=[[]]*6
     k=[[]]*6
@@ -119,6 +121,11 @@ def graphMockResults(resultsDir):
     pl.xlabel('Deviation')
     pl.ylabel('Connectivity')
     pl.title('Pareto Front for UCI Iris Dataset')
+    for i in range(1,16):
+        pl.axhline(y=i*nicheUnit, color='k')
+        pl.axvline(x=i*nicheUnit, color='k')
+    pl.xticks(np.arange(0,1,2*nicheUnit))
+    pl.yticks(np.arange(0,1,nicheUnit))
     #legend(('Solution Front', 'Control Front' ),'upper center', shadow=True)
     pl.savefig("%s/paretofront.png" % resultsDir)
 

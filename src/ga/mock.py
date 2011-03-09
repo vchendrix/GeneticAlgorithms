@@ -796,7 +796,6 @@ class Mock(object):
                 indiv=self.internalPop[j]
                 self.normalizeObjectiveFunction(indiv)
                 self.updateExternalPopulation(indiv)
-        self.writeParetoFront('paretofront.txt')
 
         print "Gen[%s,%s] %s" % (self.GEN,len(self.externalPop),self.niches)
         for e in self.externalPop:
