@@ -180,7 +180,7 @@ class Test(unittest.TestCase):
         todayStr=datetime.today().isoformat()
         resultsDir=createResultsDir('mock')
         m.run(outputDir=resultsDir)
-        graphMockResults(resultsDir)        
+        graphMockResults(resultsDir,m.nicheUnit)        
 
 
 if __name__ == "__main__":
