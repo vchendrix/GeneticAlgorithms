@@ -12,7 +12,16 @@ Random -- A Psuedorandom number generator (PRNG)
 Functions:
 
 createGraph - create an undirected graph with n vertices populated using the PRNG
+createNormalizedDataset - creates a data set normalized in the rand [0,1]
+createResultsDir - creates a results directory from the environment 
+  variable TEST_RESULTS
+graphMockResults - plots the results of the mock algorithm
+graphSimpleResults - plots the results of the simple genetic algorithm
+graphTSPResults - plots the results of the TSP genetic algorithm
 maxmin - returns the maximun and minimum hamiltonian paths for the given graph
+simpleDecorator - a base decorator for use by other decorators
+profile - function decorator that adds start and end messages to stanard
+  output
 swap - swap data between two variables
 
 
@@ -82,21 +91,29 @@ def createResultsDir(name):
         pass
     return resultsDir
         
-def graphMockResults(resultsDir,nicheUnit=0.0625):
-     
-    f=open("%s/paretofront.txt" % resultsDir)
+def graphMockResults(resultsDir,nicheUnit=0.0625,solution=None,dataType=None):
+    inputFilePart="" if dataType==None else "_%s" % dataType 
+    f=open("%s/paretofront%s.txt" % (resultsDir,inputFilePart))
     n=1.0/nicheUnit
-    x=[[]]*6
-    y=[[]]*6
-    k=[[]]*6
+    x=[None]*6 # deviation
+    y=[None]*6 # connectivity
+    k=[None]*6 # number of clusters, k
+    a=[None]*6 # attainment score
+    for i in range(5):
+        x[i]=[]
+        y[i]=[]
+        k[i]=[]
+        a[i]=[]
+
     for line in f:
         line=line.split(':')
         x[0].append(line[1])
         y[0].append(line[2])
         k[0].append(line[0])
+        a[0].append(line[3])
         if line[0] == '3':
-            kassign= [int(i) for i in list(line[3]) if i.isdigit()]
-            print "c:%s d:%s" %(line[1],line[2])
+            kassign= [int(i) for i in list(line[4]) if i.isdigit()]
+            print "c:%s d:%s" %(line[2],line[1])
             print kassign
             i=0
             failed=0
@@ -108,26 +125,44 @@ def graphMockResults(resultsDir,nicheUnit=0.0625):
                 else:failed+=1 
             print failed
 
-    for i in range(1,1):
-        f=open('controlFront%s.txt' % i)
+    for i in range(1,5):
+        f=open('%s/controlFront%s%s.txt' % (resultsDir,i,inputFilePart))
         for line in f:
             line=line.split(':')
             x[i].append(line[1])
             y[i].append(line[2])
             k[i].append(line[0])
 
-
-    pl.plot(x[0],y[0],'bo')
+    pl.plot(x[0],y[0],'bo-')
+    for i in range(5):
+        pl.plot(x[i],y[i],'g--')
+    if solution != None:
+        pl.plot(    [solution['best'].fitness['deviation'],solution['control'].fitness['deviation']],
+                    [solution['best'].fitness['connectivity'],solution['control'].fitness['connectivity']],'-')
     pl.xlabel('Deviation')
     pl.ylabel('Connectivity')
     pl.title('Pareto Front for UCI Iris Dataset')
     for i in range(1,16):
         pl.axhline(y=i*nicheUnit, color='k')
         pl.axvline(x=i*nicheUnit, color='k')
-    pl.xticks(np.arange(0,1,2*nicheUnit))
-    pl.yticks(np.arange(0,1,nicheUnit))
-    #legend(('Solution Front', 'Control Front' ),'upper center', shadow=True)
-    pl.savefig("%s/paretofront.png" % resultsDir)
+    pl.xticks(np.arange(0,1.01,2*nicheUnit))
+    pl.yticks(np.arange(0,1.01,2*nicheUnit))
+    pl.legend(('Solution Front', 'Control Front' ),'upper right', shadow=True)
+    pl.savefig("%s/paretofront%s.png" % (resultsDir,inputFilePart))
+    pl.clf()
+
+    if dataType == 'nf':
+        pl.plot(k[0],a[0],'k+')
+        pl.xlabel('Number of clusters k')
+        pl.ylabel('Attainment score')
+        pl.title('Attainment scores by k for UCI iris dataset')
+        pl.annotate("Solution k=%s" % solution['best'].x['k'],xy=(solution['best'].x['k'],solution['best'].attainmentScore),  xycoords='data',
+                 xytext=(15, -15), textcoords='offset points',
+                 arrowprops=dict(arrowstyle="->") )
+        pl.savefig("%s/attainment%s.png" % (resultsDir,inputFilePart))
+        pl.clf()
+    
+
 
 def graphSimpleResults(resultsDir):
     x=[]

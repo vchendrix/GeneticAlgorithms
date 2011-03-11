@@ -9,6 +9,7 @@ Classes
 
 Edge - defines an edge in a graph
 Hypergrid - define the hypergrid
+Individual - inherited from ga.common.Individual
 Mock - the MOCK genetic algorithm
 Pareto - Enumeration for Pareto relationship of solutions
 Vertex - define a vertex in a graph
@@ -48,6 +49,7 @@ __date__ = 'Jan 18, 2011'
 __url__ = 'https://github.com/valreee/GeneticAlgorithms'
 
 import copy
+import ga
 import heapq
 import math
 import numpy as N
@@ -56,7 +58,7 @@ import sys
 
 from numpy import linalg as LA
 
-from ga.common import Chromosome, Individual
+from ga.common import Chromosome
 from ga.utilities import createNormalizedDataset
 
 #############
@@ -282,7 +284,6 @@ def decode(chrom):
     assignments is the list of cluster assignments 
     
     """
-    minKSize=sys.float_info.max
     cc=0
     clusterAssignment=[None]*len(chrom)
     previous=[None]*len(chrom)
@@ -304,10 +305,9 @@ def decode(chrom):
                     clusterAssignment[previous[ctr]]=clusterAssignment[neighbor]
                     ctr-=1
             else:
-                minKSize= min(ctr,minKSize)
                 cc+=1
     # print "k:%d, kassgin:%s" %(cc+1,clusterAssignment)
-    return dict(k=cc,minksize=minKSize,kassign=clusterAssignment)                 
+    return dict(k=cc,kassign=clusterAssignment)                 
 
 def euclideanDistance(x,y):
     """ Finds the euclidean distance between two n-tuples """
@@ -379,13 +379,19 @@ def normalizeGraph(V):
             v.value[i]=(v.value[i]-mn[i])/spread[i]
      
 
-def objectiveFunction(individual, graph,L):
+def objectiveFunction(individual, graph,L,maxKCC=2):
     """
         The Mock objective function calculates the cluster
         Deviation and the Connectivity. The return value is a 
         dictionary with deviation and connectivity
     """  
-    if individual.x['k'] >25:
+    # get the cluster counts
+    kcc=[0 for i in range(individual.x['k'])]
+    for c in individual.x['kassign']:
+        kcc[c]+=1
+    kcc.sort()
+
+    if individual.x['k'] >25 or kcc[0] < maxKCC:
         d=float('inf') 
         c=float('inf')
     else:
@@ -533,6 +539,22 @@ class HyperGrid(object):
         self.max=None
         self.min=None
 
+class Individual(ga.common.Individual):
+
+    def __cmp__ ( self, other ):
+        """Define how to compare two Individual instances.
+        """
+        cmp=-1
+        if self.fitness['connectivity']> other.fitness['connectivity']:
+            cmp= 1 
+        elif self.fitness['connectivity']== other.fitness['connectivity']:
+            if self.fitness['deviation']< other.fitness['deviation']:
+                cmp= 1
+            elif self.fitness['deviation']== other.fitness['deviation']:
+                cmp=0
+        #print "%s %s %s" %(cmp,self,other)
+        return cmp
+
 class Mock(object):
     """ 
         Multiobjective Clustering with K-determiniation
@@ -541,7 +563,7 @@ class Mock(object):
     L=20
     GEN=200
     EPSIZE=1000
-    Pc=.85
+    Pc=.7
     
     def __init__(self,V,random):
         """
@@ -602,9 +624,9 @@ class Mock(object):
             for edge in ilargest:
                 chrom[edge.v1.id]=edge.v1.id
             x=decode(chrom) # This decodes the number of clusters
-            individual = Individual(chrom,len(chrom),x,0,niche=0,normalized=False)
+            individual = Individual(chrom,len(chrom),x,0,niche=0,normalized=False, attainmentScore=None)
             internalPop.append(individual) 
-            individual.fitness=objectiveFunction(individual,self.graph,self.L) 
+            individual.fitness=objectiveFunction(individual,self.graph,self.L,maxKCC=1) 
             self.updateMaxMin(individual)
              
         #print "maxD:%s minD:%s" %(self.maxDeviation,self.minDeviation)
@@ -685,41 +707,103 @@ class Mock(object):
                 self.niches[s.niche]=1
                 
     def run(self,outputDir='.'):
-        solutionFront=self.mock(self.graph)
-        self.writeParetoFront('%s/paretofront.txt' % outputDir)
-        """
-        Commenting this out until I figure out how to generate the control
-        fronts.
+        """ Runs the mock algorithm on the data set and five control sets
+        and then normalize to find the 'best' solution.
 
+        Normalization of the original 'solution front' using the 
+        'reference fronts'. Since there is a set of solutions for 
+        every value of k and it is not clear how individual points 
+        in the solution front should be normalized. The following 
+        is a heuristic approach to this.
+       
+        1) Restrict analysis to solutions with clusters in the range 
+           [1, kMax] where kMax is the highest number of clusters 
+           shared by all fronts AND where solutions points are 
+           not dominated by any reference point.
+
+        2) After filtering, normalize deviation and connectivity 
+           to be in region [0,1] x [0,1]
+
+        3) Take the square root of each normalized point to give 
+           higher degree of emphsis to small but distince changes in the objectives
+
+        4) Compute attainment surfaces: 
+           For each point in the solution front 
+            1) compute the distance to the attainment surfaces for
+               each reference front 
+            2) for each solution point p compute the attainment 
+               score as the Euclidean distance between p and the 
+               closest point on the reference attainment surface.
+
+        5) plot attainment scores as a function of the number of clusters
+        """
+        solutionFront=self.mock(self.graph)
+        self.writeParetoFront('%s/paretofront.txt' % outputDir,solutionFront)
         controlFront=[]
         for i in range(5):
             V=createNormalizedUniformlyRandomGraph(len(self.graph),2,self.random)
             controlFront.append(self.mock(V))
-            self.writeParetoFront('%s/controlFront%s.txt' % (outputDir,(len(controlFront)-1)))
+            self.writeParetoFront('%s/controlFront%s.txt' % (outputDir,i),controlFront[i])
 
+        # 1) 
+        # Restrict analysis to solutions with clusters in the range 
+        # [1, kMax] where kMax is the highest number of clusters 
+        # shared by all fronts AND where solutions points are 
+        # not dominated by any reference point.
         kSF=self.maxK(solutionFront)
         kCF=self.maxK(controlFront[0])
         for i in range(1,5):
             k=self.maxK(controlFront[i])
             kCF=min(k,kCF)
         kMax=min(kSF,kCF)
-        solutionFront=self.filterAndNormalize(solutionFront,kMax)
+        solutionFront=self.filter(solutionFront,kMax,controlFront)
         for i in range(5):
-            controlFront[i]=self.filterAndNormalize(controlFront[i],kMax)
+            cfi=[controlFront[j] for j in range(5) if i !=j]
+            controlFront[i]=self.filter(controlFront[i],kMax,cfi)
+
+        # 2) 
+        # After filtering, normalize deviation and connectivity 
+        # to be in region [0,1] x [0,1]
+        solutionFront=self.normalize(solutionFront)
+        for i in range(5):
+            controlFront[i]=self.normalize(controlFront[i])
+
+        # 3)
+        # Take the square root of each normalized point to give 
+        # higher degree of emphsis to small but distince changes in the objectives
+        for i in range(5):
+            for s in controlFront[i]:
+                s.fitness['deviation']=math.sqrt(s.fitness['deviation'])
+                s.fitness['connectivity']=math.sqrt(s.fitness['connectivity'])
+        for s in solutionFront:
+            s.fitness['deviation']=math.sqrt(s.fitness['deviation'])
+            s.fitness['connectivity']=math.sqrt(s.fitness['connectivity'])
+
+        # 4) 
+        # Compute attainment surfaces
         bestSolution=-1
         bestScore=-1
+        cfScore=None
         for s in solutionFront:
+            minDistance=sys.float_info.max
+            minCFPoint=None
             for cf in controlFront:
                 for c in cf: 
                     score=euclideanDistance((s.fitness['deviation'],s.fitness['connectivity']),(c.fitness['deviation'],c.fitness['connectivity']))
-                    bestScore=max(bestScore,score)
-                    if bestScore==score: bestSolution=s
-            print bestScore
-            print bestSolution
+                    minDistance=min(score,minDistance)
+                    if minDistance==score: minCFPoint=c
+            bestScore=max(bestScore,minDistance)
+            s.attainmentScore=minDistance
+            if bestScore==minDistance: 
+                bestSolution=s
+                cfScore=minCFPoint
 
+        self.writeParetoFront('%s/paretofront_nf.txt' % outputDir,solutionFront)
+        for i in range(5):
+            self.writeParetoFront('%s/controlFront%s_nf.txt' % (outputDir,i),controlFront[i])
         print bestSolution
-        return bestSolution
-        """
+        print cfScore
+        return dict(best=bestSolution, control=cfScore)
 
     def maxK(self,solutionSet):
         """ returns the largest k encountered in the solution set"""
@@ -727,23 +811,37 @@ class Mock(object):
         for s in solutionSet:
             maxK=max(s.x['k'],maxK)
 
-    def filterAndNormalize(self,solutionSet,maxK,minK=1,sqrt=True):
+    def normalize(self,solutionSet):
         self.maxDeviation=None
         self.minDeviation=None
         self.maxConnectivity=None
         self.minConnectivity=None
         for s in solutionSet:
-            if s.x['k'] <= maxK and s.x['k'] >=minK:
-                solutionSet.remove(s)
-            else:
-                self.updateMaxMin(s)
+            self.updateMaxMin(s)
+        
         for s in solutionSet:
             self.normalizeObjectiveFunction(s)
-            if sqrt:
-                s.fitness['deviation']=math.sqrt(s.fitness['deviation'])
-                s.fitness['connectivity']=math.sqrt(s.fitness['connectivity'])
+        return solutionSet
+
+    def filter(self,solutionSet,maxK,controlFronts=None):
+        """ Filters out all solutions outside of the range [1,maxK].
+            If a list of control fronts are given then the the solutions
+            dominated by reference points are removed. """
+        for s in solutionSet:
+            remove=True
+            if s.x['k'] <= maxK:
+                if controlFronts == None:
+                   remove=False
+                else:
+                    for cf in controlFronts:
+                        for c in cf:
+                            if getSolutionParetoReslationship(s,cf)>Pareto.DOMINATED:
+                               remove=False 
+                
+            if remove: solutionSet.remove(s)
         
         return solutionSet
+
 
     def mock(self,graph):
         self.externalPop=[]
@@ -778,13 +876,13 @@ class Mock(object):
                         parent2.chrom, self.random,
                         self.Pc,self.Pm,self.graph,self.L)
                 x=decode(chrom1)
-                child1 = Individual(chrom1,len(chrom1),x,0,niche=0,normalized=False)
+                child1 = Individual(chrom1,len(chrom1),x,0,niche=0,normalized=False,attainmentScore=None)
                 child1.xsite=xsite
                 child1.fitness=objectiveFunction(child1,self.graph,self.L) 
                 self.updateMaxMin(child1)
 
                 x=decode(chrom2)
-                child2 = Individual(chrom2,len(chrom2),x,0,niche=0,normalized=False)
+                child2 = Individual(chrom2,len(chrom2),x,0,niche=0,normalized=False,attainmentScore=None)
                 child2.xsite=xsite
                 child2.fitness=objectiveFunction(child2,self.graph,self.L) 
                 self.updateMaxMin(child2)
@@ -804,12 +902,13 @@ class Mock(object):
         return copy.copy(self.externalPop)
 
 
-    def writeParetoFront(self,filename):
+    def writeParetoFront(self,filename,population):
         """ Write the current pareto front to a text file """
         f=open(filename,'w')
-        for e in self.externalPop:
-            f.write("%s:%s:%s:%s\n" %(e.x['k'],e.fitness['deviation'],
-                e.fitness['connectivity'],e.x['kassign']))
+        population.sort()
+        for e in population:
+            f.write("%s:%s:%s:%s:%s\n" %(e.x['k'],e.fitness['deviation'],
+                e.fitness['connectivity'],e.attainmentScore,e.x['kassign']))
 
 class Pareto:
     """ Enumeration for Pareto Relationships """

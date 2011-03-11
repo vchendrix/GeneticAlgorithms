@@ -166,8 +166,6 @@ class Individual(object):
         self.xsite = xsite
         self.__dict__.update(kwargs)
         
-        
-    
     def __str__(self):
         return "(%d,%d)\t%s\t%s\t%s\t%s" % (self.parent1, self.parent2, self.xsite, self.chrom, self.x, self.fitness)
  
