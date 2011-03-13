@@ -147,8 +147,8 @@ def clusterDeviation(k,kassign,graph):
     for i in range(len(graph)):
         v=graph[i]
         l=kassign[i]
-        #print "[%d] %5f+=cosineSimilarity(%s,%s)" %(l,deviation,kMeans[l],v.value)
-        deviation+=cosineSimilarity(kMeans[l],v.value) 
+        #print "[%d] %5f+=euclideanDistancd(%s,%s)" %(l,deviation,kMeans[l],v.value)
+        deviation+=euclideanDistance(kMeans[l],v.value) 
     #print "*******"
     return deviation
 
@@ -203,16 +203,6 @@ def createNormalizedUniformlyRandomGraph(rows,columns,rand):
                 V[i].edges.append(e)
         V[i].edges=heapq.nsmallest(len(V[i].edges),V[i].edges)
     return V
-
-
-def createNxGraph(kassign,V):
-    """ creates a nextwork x graph from the local adjacency based matrix """
-    G=nx.Graph()
-    rangeV=range(len(V))
-    for i in rangeV:
-        G.add_node(i,value=V[i].value,group=V[i].group)
-        G.add_edge(i,kassign[i])            
-    return G
 
 def createLocusBasedAdjacencyList(V,E):
     """
@@ -336,7 +326,7 @@ def getSolutionParetoRelationship(s1,s2):
 
     dev=s1.fitness['deviation'] <= s2.fitness['deviation']  
     conn=s1.fitness['connectivity'] <= s2.fitness['connectivity']
-    if dev or conn: return Pareto.NONDOMINATED
+    if dev or  conn: return Pareto.NONDOMINATED
     else: return Pareto.DOMINATED
 
     
@@ -386,7 +376,7 @@ def objectiveFunction(individual, graph,L,maxKCC=2):
         kcc[c]+=1
     kcc.sort()
 
-    if individual.x['k'] >25 or kcc[0] < maxKCC:
+    if individual.x['k'] >25 or kcc[0] <= maxKCC:
         d=float('inf') 
         c=float('inf')
     else:
@@ -582,7 +572,7 @@ class Mock(object):
         """
        
         self.Pm=1/len(V)
-        self.hyperGridDepth=3
+        self.hyperGridDepth=5
         self.niches=dict()
         self.random=random
         self.externalPop=[]
@@ -753,7 +743,6 @@ class Mock(object):
         kMax=min(kSF,kCF)
         solutionFront=self.filter(solutionFront,kMax,controlFront)
         for i in range(5):
-            #cfi=[controlFront[j] for j in range(5) if i !=j]
             controlFront[i]=self.filter(controlFront[i],kMax)
 
         # 2) 

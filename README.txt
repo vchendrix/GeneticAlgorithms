@@ -4,7 +4,8 @@ This project is the result of my studies in genetic algorithms.  My goal is to u
 
 Requirements
 ------------
-1) numpy
+1) matplotlib
+2) numpy
 
 Run Tests
 ---------

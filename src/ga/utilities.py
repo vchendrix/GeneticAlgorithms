@@ -145,8 +145,8 @@ def graphMockResults(resultsDir,nicheUnit=0.0625,solution=None,dataType=None):
     for i in range(1,int(n)):
         pl.axhline(y=i*nicheUnit, color='k')
         pl.axvline(x=i*nicheUnit, color='k')
-    pl.xticks(np.arange(0,1.01,2*nicheUnit))
-    pl.yticks(np.arange(0,1.01,2*nicheUnit))
+    pl.xticks(np.arange(0,1.01,int(n/4)*nicheUnit))
+    pl.yticks(np.arange(0,1.01,int(n/4)*nicheUnit))
     pl.legend(('Solution Front', 'Control Front' ),'upper right', shadow=True)
     pl.savefig("%s/paretofront%s.png" % (resultsDir,inputFilePart))
     pl.clf()

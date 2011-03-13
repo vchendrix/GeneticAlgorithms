@@ -19,7 +19,7 @@ class Test(unittest.TestCase):
 
     def setUp(self):
         self.random = Random()
-        self.random.warmupRandom(0.59304585940)       
+        self.random.warmupRandom(0.2996857463486)       
         self.V=createIrisGraph("./data/iris.data")
         
         pass
