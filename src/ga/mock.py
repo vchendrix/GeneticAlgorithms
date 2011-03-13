@@ -148,7 +148,7 @@ def clusterDeviation(k,kassign,graph):
         v=graph[i]
         l=kassign[i]
         #print "[%d] %5f+=euclideanDistancd(%s,%s)" %(l,deviation,kMeans[l],v.value)
-        deviation+=euclideanDistance(kMeans[l],v.value) 
+        deviation+=cosineSimilarity(kMeans[l],v.value) 
     #print "*******"
     return deviation
 

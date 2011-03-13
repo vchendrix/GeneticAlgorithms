@@ -19,7 +19,8 @@ class Test(unittest.TestCase):
 
     def setUp(self):
         self.random = Random()
-        self.random.warmupRandom(0.2996857463486)       
+        from datetime import datetime
+        self.random.warmupRandom(datetime.today().microsecond/1000001)       
         self.V=createIrisGraph("./data/iris.data")
         
         pass
