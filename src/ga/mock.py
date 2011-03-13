@@ -339,11 +339,6 @@ def getSolutionParetoRelationship(s1,s2):
     if dev or conn: return Pareto.NONDOMINATED
     else: return Pareto.DOMINATED
 
-def generatUniformlyRandom(numDimension,numRows,random):
-    """ Generates a dataset uniformly at random with
-        the specified dimension and rows
-    """
-    
     
 def mutationNearestNeighbor(random,pm,i,allele,G,L):
     """
@@ -586,8 +581,8 @@ class Mock(object):
         >>> mock = Mock(V,random)
         """
        
-        self.Pm=5/len(V)
-        self.hyperGridDepth=4
+        self.Pm=1/len(V)
+        self.hyperGridDepth=3
         self.niches=dict()
         self.random=random
         self.externalPop=[]
@@ -758,8 +753,8 @@ class Mock(object):
         kMax=min(kSF,kCF)
         solutionFront=self.filter(solutionFront,kMax,controlFront)
         for i in range(5):
-            cfi=[controlFront[j] for j in range(5) if i !=j]
-            controlFront[i]=self.filter(controlFront[i],kMax,cfi)
+            #cfi=[controlFront[j] for j in range(5) if i !=j]
+            controlFront[i]=self.filter(controlFront[i],kMax)
 
         # 2) 
         # After filtering, normalize deviation and connectivity 

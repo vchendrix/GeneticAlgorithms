@@ -95,6 +95,17 @@ def tspGeneticAlgorithm():
     resultsDir=createResultsDir('tsp_15')
     tspga.run(silent=False,outputDir=resultsDir)
 
+def mockGeneticAlgorithm(self):
+        V=createIrisGraph("./test/data/iris.data")
+        
+        m = Mock(V,self.random)
+        todayStr=datetime.today().isoformat()
+        resultsDir=createResultsDir('mock')
+        solution=m.run(outputDir=resultsDir)
+        graphMockResults(resultsDir,m.nicheUnit)        
+        graphMockResults(resultsDir,m.nicheUnit,solution,dataType='nf')        
+    
+
 if __name__ == '__main__':
     while True:
         x=raw_input("Choose [C]oin Toss, [R]andom number [S]imple GA [T]SP: ")

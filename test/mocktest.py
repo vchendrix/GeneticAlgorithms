@@ -19,7 +19,7 @@ class Test(unittest.TestCase):
 
     def setUp(self):
         self.random = Random()
-        self.random.warmupRandom(0.65973675493875)       
+        self.random.warmupRandom(0.59304585940)       
         self.V=createIrisGraph("./data/iris.data")
         
         pass
@@ -55,7 +55,7 @@ class Test(unittest.TestCase):
         kassign=[0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 2, 2, 0, 2, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 2, 2, 0, 0, 2, 2, 0, 2, 2, 2, 0, 0, 0, 0, 2, 2, 2, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 2, 2, 4, 4, 4, 2, 4, 2, 2, 4, 2, 2, 4, 2, 2, 4, 2, 2, 2, 2, 4, 3, 2, 5, 5, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 5, 5, 5, 5, 5, 5, 6, 5, 6, 6, 6, 2, 2, 2, 6, 2, 2, 6, 5, 7, 2, 5, 5, 2, 7, 5, 2, 2, 5, 7, 7, 7, 5, 2, 7, 7, 2, 2, 2, 2, 2, 8, 2, 2, 8, 2, 2, 2, 2, 2]
         k=9
         d=clusterDeviation(k,kassign,V) 
-        self.assertAlmostEqual(1.14113951812, d, msg= "Cluster Deviation is incorrect %s should be %s" % (d,1.14113951812))
+        self.assertAlmostEqual(1.12646532849, d, msg= "Cluster Deviation is incorrect %s should be %s" % (d,1.12646532849))
         
 
     @profile
@@ -71,13 +71,13 @@ class Test(unittest.TestCase):
         kassign=[0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 2, 2, 0, 0, 2, 2, 0, 0, 3, 3, 0, 0, 0, 0, 3, 3, 3, 4, 4, 4, 4, 4, 3, 3, 5, 5, 5, 5, 3, 3, 6, 6, 6, 3, 6, 3, 3, 6, 3, 3, 6, 3, 3, 6, 3, 3, 3, 3, 6, 4, 3, 7, 7, 3, 3, 3, 3, 4, 3, 3, 3, 3, 3, 3, 7, 7, 7, 7, 7, 6, 6, 9, 9, 3, 3, 3, 3, 3, 11, 3, 3, 11, 6, 12, 3, 7, 6, 3, 12, 7, 3, 3, 6, 12, 12, 12, 6, 3, 12, 3, 3, 3, 3, 3, 3, 14, 3, 14, 14, 3, 3, 3, 3, 3]
         d=clusterConnectivity(kassign,V,20)
         
-        self.assertAlmostEqual(61, d, 8, "Cluster Deviation is incorrect %s expected %s" % (d,61))
+        self.assertAlmostEqual(62, d, 8, "Cluster Connectivity is incorrect %s expected %s" % (d,62))
         
         kassign=[0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 2, 2, 0, 2, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 2, 2, 0, 0, 2, 2, 0, 2, 2, 2, 0, 0, 0, 0, 2, 2, 2, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 2, 2, 4, 4, 4, 2, 4, 2, 2, 4, 2, 2, 4, 2, 2, 4, 2, 2, 2, 2, 4, 3, 2, 5, 5, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 5, 5, 5, 5, 5, 5, 6, 5, 6, 6, 6, 2, 2, 2, 6, 2, 2, 6, 5, 7, 2, 5, 5, 2, 7, 5, 2, 2, 5, 7, 7, 7, 5, 2, 7, 7, 2, 2, 2, 2, 2, 8, 2, 2, 8, 2, 2, 2, 2, 2]
         k=9
         d=clusterConnectivity(kassign,V,20)
-        self.assertAlmostEqual(55, d, 8, "Cluster Deviation was %s expected %s"
-                % (d,55))
+        self.assertAlmostEqual(57, d, 8, "Cluster Deviation was %s expected %s"
+                % (d,57))
 
     @profile
     def testCreateIrisGraph(self):

@@ -142,7 +142,7 @@ def graphMockResults(resultsDir,nicheUnit=0.0625,solution=None,dataType=None):
     pl.xlabel('Deviation')
     pl.ylabel('Connectivity')
     pl.title('Pareto Front for UCI Iris Dataset')
-    for i in range(1,16):
+    for i in range(1,int(n)):
         pl.axhline(y=i*nicheUnit, color='k')
         pl.axvline(x=i*nicheUnit, color='k')
     pl.xticks(np.arange(0,1.01,2*nicheUnit))
