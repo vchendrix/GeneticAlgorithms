@@ -1,18 +1,23 @@
+--------------------------
 Genetic Algorithms Project
 --------------------------
-This project is the result of my studies in genetic algorithms.  My goal is to understand and learn the discipline of evolutionary computation through my studies of aa particular clustering algorithm which is implemented as a genetic algorithm. The algorithm is called Multi-Objective Clustering with K-Determination and requires me to understand many concepts new to me.
+This project is the result of my studies in genetic algorithms.  My goal is to understand and learn the discipline of evolutionary computation through my studies of a particular clustering algorithm which is implemented as a genetic algorithm. The algorithm is called Multi-Objective Clustering with K-Determination and requires me to understand many concepts new to me.
 
+-------------------------
 Requirements
-------------
+-------------------------
 1) matplotlib
 2) numpy
 
+-------------------------
 Run Tests
----------
+-------------------------
 $ ./runTests.sh
 
+
+-------------------------
 Run the Code
-------------
+-------------------------
 The ga.sh shell script runs the python genetic algorithm tools in this project.
 
 $ ./ga.sh
@@ -24,8 +29,16 @@ Enter seed random number (0.0..1.0): .98348794567
 In 1000 coin tosses there were 495 heads and 505 tails.
 Choose [C]oin Toss, [R]andom number [S]imple GA [T]SP:  
 
+
+-------------------------
+Things I want to do
+-------------------------
+1) Test Mock on artificial datasets
+2) Parallelize Mock algorithm
+
+-------------------------
 Resources
---------:
+-------------------------
 [1] Matake, N. Hiroyasu, T. Miki, M. Senda, T., Multiobjective Clustering with Automatic k-determinationfor Large-scale Data, 2007
 [2] Shirakawa, S. Nagao, T., Evolutionary Image SegmentationBased on Multiobjective Clustering, 2007?
 [3] Handl, Julia. Knowles, Joshua., Multiobjective Clustering with automatic determination of the number of clusters, 2004
