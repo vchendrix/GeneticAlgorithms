@@ -645,13 +645,16 @@ class Mock(object):
     def normalizeObjectiveFunction(self,individual):
         if individual.fitness['deviation']==float('inf'): return
         if individual.normalized==False:
-            if self.maxDeviation-self.minDeviation > 0:
-                dDenom=(self.maxDeviation-self.minDeviation)
-                cDenom=(self.maxConnectivity-self.minConnectivity)
+            dDenom=(self.maxDeviation-self.minDeviation)
+            cDenom=(self.maxConnectivity-self.minConnectivity)
+            if dDenom > 0:
                 individual.fitness['deviation']=(individual.fitness['deviation']-self.minDeviation)/dDenom
-                individual.fitness['connectivity']=float(individual.fitness['connectivity']-self.minConnectivity)/cDenom
-            elif self.maxDeviation-self.minDeviation==0: 
+            else: 
                 individual.fitness['deviation']=1
+
+            if cDenom >0:
+                individual.fitness['connectivity']=float(individual.fitness['connectivity']-self.minConnectivity)/cDenom
+            else:
                 individual.fitness['connectivity']=1
             individual.normalized=True 
       

@@ -8,6 +8,7 @@ Requirements
 -------------------------
 1) matplotlib
 2) numpy
+3) python-dateutil
 
 -------------------------
 Run Tests

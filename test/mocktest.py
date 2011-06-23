@@ -5,9 +5,7 @@ Created on Jan 18, 2011
 '''
 import os
 import sys
-sys.path.insert(0, './src')
 sys.path.insert(0, '../src')
-import mock
 import unittest
 from datetime import datetime
 from ga.utilities import *
@@ -72,7 +70,7 @@ class Test(unittest.TestCase):
         kassign=[0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 2, 2, 0, 0, 2, 2, 0, 0, 3, 3, 0, 0, 0, 0, 3, 3, 3, 4, 4, 4, 4, 4, 3, 3, 5, 5, 5, 5, 3, 3, 6, 6, 6, 3, 6, 3, 3, 6, 3, 3, 6, 3, 3, 6, 3, 3, 3, 3, 6, 4, 3, 7, 7, 3, 3, 3, 3, 4, 3, 3, 3, 3, 3, 3, 7, 7, 7, 7, 7, 6, 6, 9, 9, 3, 3, 3, 3, 3, 11, 3, 3, 11, 6, 12, 3, 7, 6, 3, 12, 7, 3, 3, 6, 12, 12, 12, 6, 3, 12, 3, 3, 3, 3, 3, 3, 14, 3, 14, 14, 3, 3, 3, 3, 3]
         d=clusterConnectivity(kassign,V,20)
         
-        self.assertAlmostEqual(62, d, 8, "Cluster Connectivity is incorrect %s expected %s" % (d,62))
+        self.assertAlmostEqual(60, d, 8, "Cluster Connectivity is incorrect %s expected %s" % (d,60))
         
         kassign=[0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 2, 2, 0, 2, 2, 0, 0, 0, 0, 0, 2, 0, 0, 0, 2, 2, 2, 0, 0, 2, 2, 0, 2, 2, 2, 0, 0, 0, 0, 2, 2, 2, 3, 3, 3, 3, 3, 2, 3, 3, 3, 3, 3, 2, 2, 4, 4, 4, 2, 4, 2, 2, 4, 2, 2, 4, 2, 2, 4, 2, 2, 2, 2, 4, 3, 2, 5, 5, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 2, 5, 5, 5, 5, 5, 5, 6, 5, 6, 6, 6, 2, 2, 2, 6, 2, 2, 6, 5, 7, 2, 5, 5, 2, 7, 5, 2, 2, 5, 7, 7, 7, 5, 2, 7, 7, 2, 2, 2, 2, 2, 8, 2, 2, 8, 2, 2, 2, 2, 2]
         k=9
@@ -120,9 +118,9 @@ class Test(unittest.TestCase):
 
     @profile
     def testPareto(self):
-        indiv1 = mock.Mock()
+        indiv1 = Individual([])
         indiv1.fitness={'deviation':1,'connectivity':0} 
-        indiv2 = mock.Mock()
+        indiv2 = Individual([])
         indiv2.fitness={'deviation':1,'connectivity':0} 
 
         p=getSolutionParetoRelationship(indiv1,indiv2)
